@@ -1,1 +1,227 @@
-.main-nav a,button{transition:background-color .2s}.dash-cont,.form-container{box-shadow:0 0 10px rgba(0,0,0,.3)}@font-face{font-family:Roboto;src:url('https://fonts.googleapis.com/css2?family=Roboto&display=swap')}body{margin:0;font-family:Roboto,sans-serif}.main-nav{background-color:#0074d9;padding:20px;display:flex;align-items:center}.dropdown,input{padding:10px;background-color:#fff}.main-nav .logo{margin-right:auto}.main-nav .navl{list-style:none;display:flex;justify-content:space-between;padding:0;margin:0}.main-nav li{margin:0;display:inline}.main-nav a{text-decoration:none;color:#000;padding:10px 20px;border-radius:5px;font-size:18px}a,a:visited{color:#525252;text-decoration:none}.main-nav a:hover{color:#545454}.profile{display:flex;align-items:center}.profile img{width:30px;height:30px;border-radius:50%;margin-left:10px;cursor:pointer}.dropdown{position:absolute;top:55px;right:30px;border:1px solid #ccc;border-radius:5px;display:none}.profile:hover .dropdown{display:block}.dropdown-item{padding:5px;cursor:pointer}.dropdown-item:hover{background-color:#f1f1f1}.form-container{padding:20px;max-width:300px;border-radius:10px}h1{font-size:24px;margin-bottom:20px}form{display:flex;flex-direction:column}label{margin-bottom:5px}input{width:100%;margin-bottom:10px;border-radius:5px;border:1px solid #ddd;color:#333}.upload-button,button{padding:10px 20px;color:#000;cursor:pointer}button{background-color:#6fbbfd;border:none;border-radius:5px}button:hover{background-color:#5d9ed6}.upload-button{border:none;border-radius:4px;font-size:17px}.dashboard-container{display:flex;justify-content:space-between;max-width:800px;margin:0 auto}.dash-cont{flex:1;padding:20px;border-radius:10px}.dash-cont+.dash-cont{margin-left:20px}.list-item{border:1px solid #ccc;padding:10px;margin:5px;background-color:#f9f9f9;max-width:100%;display:flex;align-items:center;gap:10px}.list-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.list-item::after{content:"";flex:1}a{transition:color .3s}a:hover{color:#000;text-decoration:none;cursor:pointer}a:active{background-color:transparent}.material-icons{position:absolute;right:20px}
+@font-face {
+	font-family: 'Roboto';
+	src: url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+}
+
+body {
+	margin: 0;
+	font-family: 'Roboto', sans-serif;
+}
+
+.main-nav {
+	background-color: #0074d9;
+	padding: 20px;
+	display: flex;
+	align-items: center;
+}
+
+.main-nav .logo {
+	margin-right: auto;
+}
+
+.main-nav .navl {
+	list-style: none;
+	display: flex;
+	justify-content: space-between;
+	padding: 0;
+	margin: 0;
+}
+
+.main-nav li {
+	margin: 0;
+	display: inline;
+}
+
+.main-nav a {
+	text-decoration: none;
+	color: #000;
+	padding: 10px 20px;
+	border-radius: 5px;
+	transition: background-color 0.2s ease;
+	font-size: 18px;
+}
+
+.main-nav a:hover {
+	color: #545454;
+}
+
+.profile {
+	display: flex;
+	align-items: center;
+}
+
+.profile img {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	margin-left: 10px;
+	cursor: pointer;
+}
+
+.dropdown {
+	position: absolute;
+	top: 55px;
+	right: 30px;
+	background-color: #fff;
+	border: 1px solid #ccc;
+	border-radius: 5px;
+	padding: 10px;
+	display: none;
+}
+
+.profile:hover .dropdown {
+	display: block;
+}
+
+.dropdown-item {
+	padding: 5px;
+	cursor: pointer;
+}
+
+.dropdown-item:hover {
+	background-color: #f1f1f1;
+}
+
+.form-container {
+	padding: 20px;
+	max-width: 300px;
+	border-radius: 10px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+h1 {
+	font-size: 24px;
+	margin-bottom: 20px;
+}
+
+form {
+	display: flex;
+	flex-direction: column;
+}
+
+label {
+	margin-bottom: 5px;
+}
+
+input {
+	width: 100%;
+	padding: 10px;
+	margin-bottom: 10px;
+	border-radius: 5px;
+	border: 1px solid #ddd;
+	background-color: #fff;
+	color: #333;
+}
+
+button {
+	background-color: #6FBBFD;
+	color: #000;
+	padding: 10px 20px;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+button:hover {
+	background-color: #5D9ED6;
+}
+
+a {
+	color: #007bff;
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+.upload-button {
+	padding: 10px 20px;
+	color: #000000;
+	border: none;
+	border-radius: 4px;
+	font-size: 17px;
+	cursor: pointer;
+}
+
+.dashboard-container {
+	display: flex;
+	justify-content: space-between;
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.dash-cont {
+	flex: 1;
+	padding: 20px;
+	border-radius: 10px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.dash-cont+.dash-cont {
+	margin-left: 20px;
+	/* Adjust the spacing as needed */
+}
+
+.list-item {
+	border: 1px solid #ccc;
+	padding: 10px;
+	margin: 5px;
+	background-color: #f9f9f9;
+	max-width: 100%;
+	display: flex;
+	/* Ensure that the contents don't overflow */
+	align-items: center;
+	/* Center vertically within the div */
+	gap: 10px;
+	/* Add some spacing between the icon and text */
+}
+
+.list-item span {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+
+.list-item::after {
+	content: "";
+	flex: 1;
+}
+
+
+/* Apply basic styling */
+a {
+	color: #525252;
+	/* Link color */
+	text-decoration: none;
+	/* Remove underline */
+	transition: color 0.3s;
+	/* Add a smooth transition for color change */
+	text-decoration: none;
+}
+
+/* Style links on hover */
+a:hover {
+	color: #000000;
+	/* Change color on hover */
+	text-decoration: none;
+	cursor: pointer;
+}
+
+/* Style links for visited pages */
+a:visited {
+	color: #525252;
+	/* Visited link color */
+	text-decoration: none;
+}
+
+a:active {
+	background-color: transparent;
+}
+
+.material-icons {
+	position: absolute;
+	right: 20px;
+}

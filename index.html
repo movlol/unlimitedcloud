@@ -1,7 +1,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Use roblox database as unlimited cloud Storage">
-  <title> Roblox Datastore's - Cloud Storage </title>
+  <title>Unlimited - Cloud Storage</title>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="main.css" rel="stylesheet">
 </head>
@@ -19,27 +19,50 @@
       <img src="https://cdn.glitch.global/79010910-a390-4a9c-9660-592915560bec/421-4212617_person-placeholder-image-transparent-hd-png-download.png?v=1692095398338" alt="Profile Picture">
       <div class="dropdown">
         <div class="dropdown-item">
-          <a onclick="logout()">Log out</a>
-          <script></script>
+          <a onclick="getlogin()">Save passkey to file</a>
         </div>
         <br>
         <div class="dropdown-item">
-          <a onclick="getlogin()">Get Login</a>
+          <a onclick="logout()">Log out</a>
+          <script></script>
         </div>
       </div>
     </div>
   </nav>
   <div id="auth" style="display: none;">
     <center>
-      <h1> Set roblox API keys </h1>
+      <h1>Login with passkey</h1>
       <div class="form-container">
+        <div id="start">
+          <p>Dont have a passkey? create one below</p>
+          <button id="makekey" onclick="makekey()">Create a passkey</button>
+          <br><br>
+          <p>Have a passkey? login below</p>
+          <button id="signup" onclick="loginkeyHTML()">Login</button>
+         </div>
+
+       <div id="newaccount" style="display: none;">
         <input type="text" id="ai" placeholder="Enter roblox api key">
         <input type="text" id="ui" placeholder="Enter your universe ID">
+        <input type="text" id="ek" placeholder="Enter your Encryption key">
+        <a id="makekey" onclick="generatekey()">Generate New Encryption Key</a>
         <br>
-        <button id="signup" onclick="handleSignup()">Set API keys</button>
+        <button id="signup" onclick="generatepasskey()">Create passkey</button>
         <p>Dont have roblox API keys? <a href="https://create.roblox.com/dashboard/credentials?activeTab=ApiKeysTab">MAKE ONE HERE</a> Select universe datastore, choose a place, and add all permissions, make the access ip: 0.0.0.0/0. </p>
         <p>If you lose your API key create a new one on the same roblox universe and all your files will be safe</p>
-        <p>After setting ur credentials hover over the person icon in the top right and click get Login to get access back into your account from anywhere, you can save this in your google drive so u can access your files again</p>
+        <p>After setting ur credentials hover over the person icon in the top right and click "save passkey to file" to get access back into your account from anywhere, you can save this in your google drive, write it down so u can access your files again</p>
+        <a onclick="back()">Back</a>
+       </div>
+
+       <div id="enterpass" style="display: none;">
+        <input type="text" id="passkeee" placeholder="Enter your passkey">
+        <br>
+        <button id="signup" onclick="loginfrombut()">Login</button>
+        <br>
+        <br>
+        <a onclick="back()">Back</a>
+       </div>
+
       </div>
     </center>
   </div>
