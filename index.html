@@ -6,6 +6,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link href="main.css" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
+  <script type="module">
+    import { FFmpeg } from "./ffmpeg/index.js"
+    window.FFmpeg = FFmpeg
+  </script>
 </head>
 <body>
   <nav class="main-nav">
@@ -76,6 +80,23 @@
       </div>
       <p id="upload-text2"></p>
     </div>
+
+    <div id="filelol" class="popup" style="display: none;" onclick="closePopup(event)">
+      <div class="popup-content" id="filespot" onclick="event.stopPropagation()">
+        
+      </div>
+    </div>
+    
+    <script>
+      function closePopup(event) {
+        document.getElementById('filelol').style.display = 'none';
+        window.streamingfile = false;
+        document.getElementById('filespot').innerHTML = '';
+      }
+    </script>
+    
+    
+
     <center>
       <div class="files" id="uploads-container" style="width: 100%">
         <br>

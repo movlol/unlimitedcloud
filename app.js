@@ -1,3 +1,40 @@
+let ffmpeg;
+let starttime;
+
+async function setupffmpeg() {
+    while (!window.FFmpeg) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const FFmpeg = window.FFmpeg
+    ffmpeg = new FFmpeg()
+    console.log(ffmpeg)
+    ffmpeg.on("log", ({message}) => console.log(message))
+    const coreURL = "/ffmpeg-core.js"
+    await ffmpeg.load({coreURL})
+    window.ffmpegloaded = true
+    console.log("FFmpeg has loaded!")
+}
+setupffmpeg()
+
+const supportedImageExtensions = [
+    'jpg', 'jpeg', 'png', 'bmp', 'gif', 'tiff', 'webp'
+];
+
+const supportedVideoExtensions = [
+    'mp4', 'mkv', 'mov', 'avi', 'flv', 'wmv', 'webm', 'mpeg', '3gp', 'ogg'
+];
+
+function isSupportedByFFmpeg(ext) {
+    if (supportedImageExtensions.includes(ext)) {
+      return 'image';
+    }
+    if (supportedVideoExtensions.includes(ext)) {
+      return 'video';
+    }
+    return null;
+  }
+
+
 function getlogin() {
   let f = getcurrentpasskey();
 
@@ -313,7 +350,8 @@ async function handleFolderSelection(event) {
         console.log(deep)
   
 
-       await setfile(file, i, allfiles, deep.split("/").pop());
+        const thumbnailchunkid = await trymakethumbnail(file)
+        await setfile(file, i, allfiles, deep.split("/").pop(), thumbnailchunkid);
   
     };
 
@@ -365,7 +403,7 @@ function generateFileKey() { //key no-one could guess
 }
 
 
-async function setfile(file, number, max, dvvv) {
+async function setfile(file, number, max, dvvv, thumbnailchunkid) {
     return new Promise((resolve, reject) => {
         const uploadProgressBar = document.getElementById("upload-progress");
         const uploadProgressText = document.getElementById("upload-text");
@@ -483,7 +521,7 @@ async function setfile(file, number, max, dvvv) {
                 uploadsObject = JSON.parse(uploadsObject);
             }
   
-            uploadsObject[filename] = [generateUUID(), chunksstorageid, totalChunks, file.size];
+            uploadsObject[filename] = [generateUUID(), chunksstorageid, totalChunks, file.size, thumbnailchunkid];
   
             await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject));
             if (dvvv == dValue) {
@@ -499,6 +537,180 @@ async function setfile(file, number, max, dvvv) {
     });
   }
   
+
+async function uploadthumbnail(file, chunksstorageid,) {
+    return new Promise((resolve, reject) => {
+        const uploadProgressBar = document.getElementById("upload-progress");
+        const uploadProgressText = document.getElementById("upload-text");
+        const upt2 = document.getElementById("upload-text2");
+  
+        const filename = file.name;
+
+  
+        const chunkSize = 0.5 * 1024 * 1024;  // 0.5 MB per chunk
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        let currentChunk = 0;
+  
+        uploadProgressBar.style.width = `0%`;
+        uploadProgressText.textContent = `Uploading Thumbnail... 0%`;
+        upt2.textContent = `0 MB / ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+        document.title = `0%`;
+
+
+        //doesnt even need to chunk since so small do it anyway just incase? lol
+        function createUploadPromises() {
+            const promises = [];
+            for (let i = 0; i < 5 && currentChunk < totalChunks; i++, currentChunk++) {
+                const THISCHUNK = currentChunk
+                
+                const start = currentChunk * chunkSize;
+                const end = Math.min(start + chunkSize, file.size);
+                const chunk = file.slice(start, end);
+  
+                const reader = new FileReader();
+  
+                const promise = new Promise((resolve, reject) => {
+                    reader.onload = async function() {
+                        const chunkData = reader.result;
+  
+                        // Send chunk data
+                        await sendChunk(chunkData, THISCHUNK);
+  
+                        let uploadedMB = (currentChunk * chunkSize) / (1024 * 1024);
+                        const totalMB = file.size / (1024 * 1024);
+                        if (uploadedMB > totalMB) {
+                            uploadedMB = totalMB
+                        }
+                        const progress = (currentChunk / totalChunks) * 100;
+  
+                        // Display progress and speed
+                        uploadProgressBar.style.width = `${progress}%`;
+                        uploadProgressText.textContent = `Uploading Thumbnail... ${progress.toFixed(2)}%`;
+                        upt2.textContent = `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB`;
+                        document.title = `${progress.toFixed(2)}%`;
+  
+                        resolve();
+                    };
+  
+                    reader.onerror = function() {
+                        reject(new Error("Error reading file chunk"));
+                    };
+  
+                    reader.readAsArrayBuffer(chunk);
+                });
+  
+                promises.push(promise);
+            }
+  
+            return promises;
+        }
+  
+        function uploadChunks() {
+            // Run 5 promises at once
+            const uploadBatch = createUploadPromises();
+  
+            if (uploadBatch.length > 0) {
+                // Wait for the 5 promises to finish
+                Promise.all(uploadBatch).then(() => {
+                    // Once the batch finishes, check if there are more chunks to upload
+                    if (currentChunk < totalChunks) {
+                        uploadChunks();
+                    } else {
+                        finishUpload();
+                    }
+                }).catch((error) => {
+                    console.error("Error during batch upload:", error);
+                    reject(error);
+                });
+            }
+        }
+  
+        async function sendChunk(chunkData, chunkid) {
+            await setasync(chunksstorageid, chunkid.toString(), chunkData);
+        }
+  
+        async function finishUpload() {
+           resolve()
+        }
+  
+        // Start the upload process
+        uploadChunks();
+    });
+  }
+
+
+async function trymakethumbnail(file) {
+    const uploadProgressPopup = document.getElementById("upload-progress-popup");
+    uploadProgressPopup.style.display = "block";
+    const uploadProgressText = document.getElementById("upload-text");
+    const ext = getFileExtension(file.name);
+    const works = isSupportedByFFmpeg(ext)
+    console.log(works)
+    
+    let thumbnailchunkid = ""
+
+    if (works) {
+
+      uploadProgressText.textContent = `Waiting for ffmpeg...`;
+      while (!window.ffmpegloaded) {
+          await delay(100)
+      }
+      filebuff = await new Promise ((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+                  resolve(event.target.result)
+          };
+          reader.readAsArrayBuffer(file);
+      })
+      const inputname = "input." + ext
+      await ffmpeg.writeFile(inputname, new Uint8Array(filebuff))
+
+      thumbnailchunkid = generateUUID()
+
+
+      try {
+          if (works == "image") {
+              await ffmpeg.exec([
+                  '-i', inputname,            // Input file
+                  '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Crop filter
+                  '-s', '128x128',            // Resize to 128x128
+                  "thumbnail.png"                  // Output file
+              ]);
+              const newdata = await ffmpeg.readFile("thumbnail.png")
+              const blob = new Blob([newdata], { type: 'image/png' });
+              const file = new File([blob], "thumbnail.png", { type: 'image/png' });
+              console.log(file)
+  
+              await uploadthumbnail(file, thumbnailchunkid)
+  
+          } else if (works == "video") {
+              await ffmpeg.exec([
+                  '-i', inputname,                           // Input video
+                  '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Scale and pad to 128x128
+                  '-frames:v', '1',                          // Extract only one frame
+                  '-ss', '00:00:01',                         // Take the frame at 1 second into the video
+                  "thumbnail.png"                            // Output file
+              ]);
+              const newdata = await ffmpeg.readFile("thumbnail.png");
+              const blob = new Blob([newdata], { type: 'image/png' });
+              const file = new File([blob], "thumbnail.png", { type: 'image/png' });
+              console.log(file)
+
+              await uploadthumbnail(file, thumbnailchunkid);
+  
+          }
+  
+      } catch(err) {
+            console.log(err)
+          thumbnailchunkid = ""
+      }
+
+
+    }
+
+    return thumbnailchunkid
+}
+
 
 
 async function handleFileSelection(event) {
@@ -523,15 +735,8 @@ async function handleFileSelection(event) {
   let i = 0
   for (const file of (event.target.files)) {
       i += 1
-      const uploadProgressPopup = document.getElementById("upload-progress-popup");
-      uploadProgressPopup.style.display = "block";
-
-      const uploadProgressBar = document.getElementById("upload-progress");
-      const uploadProgressText = document.querySelector("#upload-progress-popup");
-      const updateInterval = 100;
-
-
-      await setfile(file, i, allfiles, dvvv);
+      const thumbnailchunkid = await trymakethumbnail(file)
+      await setfile(file, i, allfiles, dvvv, thumbnailchunkid);
 
   };
   document.title = `Unlimited - Cloud Storage`;
@@ -774,6 +979,7 @@ async function createitems(uploadsObject, dva) {
   if (dValue != dva) {
       return
   }
+  console.log(uploadsObject)
 
   const uploadsContainer = document.getElementById("uploads-container");
 
@@ -1048,7 +1254,7 @@ async function createitems(uploadsObject, dva) {
           e = "❓"
       }
 
-      if (e === "🖼️") {
+      if (filelink[4] != "") { //has a thumbnail
         const img = document.createElement("img");
         let imgsrc = ""
         try {
@@ -1064,10 +1270,6 @@ async function createitems(uploadsObject, dva) {
         img.style.height = "128px";
         img.style.objectFit = "cover";
 
-        img.onload = () => {
-            URL.revokeObjectURL(img.src);
-        };
-
         div.appendChild(img);
 
 
@@ -1079,6 +1281,137 @@ async function createitems(uploadsObject, dva) {
         span.textContent = e + filename;
         div.appendChild(span);
       }
+
+
+      link.addEventListener("click", async function(event) {
+        event.preventDefault();
+        const works = isSupportedByFFmpeg(fileExtension)
+        console.log(works)
+        if (!works) {
+            return alert("Sorry you can not preview this file however you can download it")
+        }
+
+        if (works == "image") {
+            document.getElementById("filelol").style.display = "";
+            window.streamingfile = true;
+            const img = document.createElement("img");
+            img.classList.add("fileprev");
+            document.getElementById("filespot").innerHTML = "";
+            document.getElementById("filespot").appendChild(img);
+            const l = document.createElement("p");
+            l.textContent = "Loading Image...";
+            document.getElementById("filespot").appendChild(l);
+            const totalchunks = filelink[2];
+            const chunkid = filelink[1];
+            const filesize = filelink[3];
+            let loadedSize = 0;
+            let chunks = [];
+
+            // Function to fetch chunks concurrently in batches
+            const fetchChunksInBatches = async () => {
+                const batchSize = 50; // Number of concurrent requests per batch
+                let currentChunk = 0;
+            
+                while (currentChunk < totalchunks && window.streamingfile) {
+                    const batchPromises = [];
+                    // Create promises for the current batch of chunks
+                    for (let i = currentChunk; i < Math.min(currentChunk + batchSize, totalchunks); i++) {
+                        batchPromises.push(
+                            getasync(chunkid, i.toString(), true).then(chunk => {
+                                // Ensure each chunk is placed at the correct index
+                                chunks[i] = chunk;
+                                loadedSize += chunk.size;
+            
+                                // Update progress after each chunk is fetched
+                                const loadedMB = (loadedSize / (1024 * 1024)).toFixed(2); // Loaded size in MB
+                                const totalMB = (filesize / (1024 * 1024)).toFixed(2); // Total file size in MB
+                                const progress = ((loadedSize / filesize) * 100).toFixed(2); // Percentage progress
+                                l.textContent = `${loadedMB} MB / ${totalMB} MB (${progress}%)`;
+                            })
+                        );
+                    }
+            
+                    // Wait for all promises in the batch to resolve
+                    await Promise.all(batchPromises);
+            
+                    currentChunk += batchSize;
+                }
+            
+                // Once all chunks are loaded, combine them into a blob and update the image
+                const blob = new Blob(chunks, { type: 'application/octet-stream' });
+                const imgUrl = URL.createObjectURL(blob);
+                img.src = imgUrl;
+            
+                l.remove(); // Remove the "Connecting..." text once all chunks are loaded
+            };
+            
+            // Start the batch fetching
+            fetchChunksInBatches();
+            
+
+        } else {
+            document.getElementById("filelol").style.display = "";
+            window.streamingfile = true;
+            const img = document.createElement("video");
+            img.classList.add("fileprev");
+            img.controls = true
+            document.getElementById("filespot").innerHTML = "";
+            document.getElementById("filespot").appendChild(img);
+            const l = document.createElement("p");
+            l.textContent = "Loading Video...";
+            document.getElementById("filespot").appendChild(l);
+            const totalchunks = filelink[2];
+            const chunkid = filelink[1];
+            const filesize = filelink[3];
+            let loadedSize = 0;
+            let chunks = [];
+
+            // Function to fetch chunks concurrently in batches
+            const fetchChunksInBatches = async () => {
+                const batchSize = 50; // Number of concurrent requests per batch
+                let currentChunk = 0;
+            
+                while (currentChunk < totalchunks && window.streamingfile) {
+                    const batchPromises = [];
+                    // Create promises for the current batch of chunks
+                    for (let i = currentChunk; i < Math.min(currentChunk + batchSize, totalchunks); i++) {
+                        batchPromises.push(
+                            getasync(chunkid, i.toString(), true).then(chunk => {
+                                // Ensure each chunk is placed at the correct index
+                                chunks[i] = chunk;
+                                loadedSize += chunk.size;
+            
+                                // Update progress after each chunk is fetched
+                                const loadedMB = (loadedSize / (1024 * 1024)).toFixed(2); // Loaded size in MB
+                                const totalMB = (filesize / (1024 * 1024)).toFixed(2); // Total file size in MB
+                                const progress = ((loadedSize / filesize) * 100).toFixed(2); // Percentage progress
+                                l.textContent = `${loadedMB} MB / ${totalMB} MB (${progress}%)`;
+                            })
+                        );
+                    }
+            
+                    // Wait for all promises in the batch to resolve
+                    await Promise.all(batchPromises);
+            
+                    currentChunk += batchSize;
+                }
+            
+                // Once all chunks are loaded, combine them into a blob and update the image
+                const blob = new Blob(chunks, { type: 'application/octet-stream' });
+                const imgUrl = URL.createObjectURL(blob);
+                img.src = imgUrl;
+            
+                l.remove(); // Remove the "Connecting..." text once all chunks are loaded
+            };
+            
+            // Start the batch fetching
+            fetchChunksInBatches();
+            
+        }
+        
+
+    });
+
 
       const delbutton = document.createElement("i")
       delbutton.textContent = "delete"
@@ -1120,17 +1453,26 @@ async function createitems(uploadsObject, dva) {
       });
 
 
-      if (dva == dva.split("/").pop()) {
+      const downloadbtn = document.createElement("i")
+      downloadbtn.textContent = "download"
+      downloadbtn.classList.add("material-icons")
+      downloadbtn.classList.add("downfol")
+
+        downloadbtn.addEventListener("click", async function(event) {
+            event.stopPropagation();
+            downloadfile(filename, filelink[1], filelink[2], filelink[3], 1, 1)
+
+        });
+
+      if ("Bin" != dva.split("/").pop()) {
         div.appendChild(delbutton)
       }
+      div.appendChild(downloadbtn)
       link.appendChild(div);
       uploadsContainer.appendChild(link);
 
 
-      link.addEventListener("click", function(event) {
-          event.preventDefault();
-          downloadfile(filename, filelink[1], filelink[2], filelink[3], 1, 1)
-      });
+
 
   });
 
@@ -1452,13 +1794,12 @@ async function cacheblobs() {
                 if (uploadsObject[i][1] == "folder") {
                     await checkforimages(uploadsObject[i][0])
                 } else {
-                    const et = getFileExtension(i)
-                    let e = emoji[et]
-                    if (e == "🖼️") {
+                    const thumbloc = uploadsObject[i][4]
+                    if (thumbloc != "") {
                         const a = await blobExists(uploadsObject[i][1])
                         if (!a) {
                             console.log(uploadsObject[i])
-                            const fileasblob = await getfileasBLOB(uploadsObject[i][1], uploadsObject[i][2])
+                            const fileasblob = await getfileasBLOB(thumbloc, 1)
                             await setCachedBlob(uploadsObject[i][1], fileasblob)
                         }
     
