@@ -3,6 +3,7 @@
   <meta name="description" content="Use roblox database as unlimited cloud Storage">
   <title>Unlimited - Cloud Storage</title>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link href="main.css" rel="stylesheet">
 </head>
 <body>
@@ -79,10 +80,13 @@
         <br>
         <br>
         <input type="file" id="file-input" multiple style="display: none;">
+        <input type="file" id="folder-input" webkitdirectory style="display: none;">
         <button class="upload-button" onclick="uploadFile()">
-          <img src="https://cdn.glitch.global/79010910-a390-4a9c-9660-592915560bec/2055824%20(2).png" alt="Upload Icon" style="width: 20px; height: 20px; margin-right: 10px;"> Upload File's </button>
+          <i class="material-icons inline-icon">upload</i>Upload File's</button>
         <button class="upload-button" onclick="createFolder()">
-          <img src="https://cdn.glitch.global/6b03bc19-4efa-46fb-a88a-f2bf62a6b617/1514350.webp?v=1692184865" alt="Upload Icon" style="width: 20px; height: 20px; margin-right: 10px;"> Create Folder </button>
+          <i class="material-icons inline-icon">folder</i>Create Folder</button>
+        <button class="upload-button" onclick="uploadFolder()">
+          <i class="material-icons inline-icon">drive_folder_upload</i>Upload Folder</button>
         <br>
         <br>
         <div id="dir"></div>

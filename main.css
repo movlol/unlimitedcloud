@@ -143,6 +143,7 @@ a:hover {
 	border-radius: 4px;
 	font-size: 17px;
 	cursor: pointer;
+	justify-content: center;
 }
 
 .dashboard-container {
@@ -221,7 +222,17 @@ a:active {
 	background-color: transparent;
 }
 
-.material-icons {
+.delicon {
 	position: absolute;
 	right: 20px;
+}
+
+.downfol {
+	position: absolute;
+	right: 60px;
+}
+
+.inline-icon {
+    display: inline-block;
+    vertical-align: middle; /* To align the icon vertically with the text */
 }

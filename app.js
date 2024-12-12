@@ -115,6 +115,8 @@ var emoji = {
   "mp4": "🎥",
   "mov": "🎥",
   "avi": "🎥",
+  "ts": "🎥",
+  "mpeg": "🎥",
   "zip": "📦",
   "rar": "📦",
   "exe": "💻",
@@ -235,15 +237,107 @@ function createpath() {
 const fileInput = document.getElementById('file-input');
 fileInput.addEventListener('change', handleFileSelection);
 
+const folderinput = document.getElementById('folder-input');
+folderinput.addEventListener('change', handleFolderSelection);
+
+async function handleFolderSelection(event) {
+    const allfiles = event.target.files.length;
+    console.log(event.target.files)
+    var str = event.target.files[0].webkitRelativePath;
+    const foldername = str.substring(0, str.lastIndexOf("/") + 0);
+    console.log(foldername)
+
+    
+    let dvvv = dValue;
+    console.log(dvvv)
+
+    let uploadsObject = await getasync("u", dvvv.split("/").pop())
+    if (!uploadsObject) {
+        uploadsObject = {}
+    } else {
+        uploadsObject = JSON.parse(uploadsObject)
+    }
+    let folderid = generateUUID()
+
+    if (uploadsObject[foldername]) {
+        return alert(`There is already a folder with the same name ${foldername}`)
+    }
+
+    uploadsObject[foldername] = [folderid, "folder"]
+
+
+    await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject))
+    loaduploads()
+
+    const orid = dvvv+"/"+folderid
+
+    let createdfolders = {}
+
+    let i = 0
+    for (const file of (event.target.files)) {
+        i += 1
+        const uploadProgressPopup = document.getElementById("upload-progress-popup");
+        uploadProgressPopup.style.display = "block";
+  
+        const uploadProgressBar = document.getElementById("upload-progress");
+        const uploadProgressText = document.querySelector("#upload-progress-popup");
+        const updateInterval = 100;
+        let items = file.webkitRelativePath.split("/")
+        items.shift();
+        items.pop();
+
+        console.log(items)
+        let deep = orid
+        for (const i of items) {
+            if (!createdfolders[deep+i]) {
+
+                let uploadsObject = await getasync("u", deep.split("/").pop())
+                if (!uploadsObject) {
+                    uploadsObject = {}
+                } else {
+                    uploadsObject = JSON.parse(uploadsObject)
+                }
+                let folderid = generateUUID()
+            
+                uploadsObject[i] = [folderid, "folder"]
+
+                await setasync("u", deep.split("/").pop(), JSON.stringify(uploadsObject))
+
+                createdfolders[deep+i] = folderid
+                deep += "/"+folderid
+
+            } else {
+                deep += "/"+createdfolders[deep+i]
+            }
+        }
+        console.log(deep)
+  
+
+       await setfile(file, i, allfiles, deep.split("/").pop());
+  
+    };
+
+    document.title = `Roblox Datastore's - Cloud Storage`;
+
+  
+  }
+
+
+
 function uploadFile() {
   fileInput.click();
 }
 
+function uploadFolder() {
+    folderinput.click();
+  }
+
 async function createFolder() {
+    const dvvv = dValue;
   const folderName = prompt("Folder Name:");
 
   if (folderName) {
-      let uploadsObject = await getasync("u", encodeURIComponent(dValue))
+      let uploadsObject = await getasync("u", dvvv.split("/").pop())
       if (!uploadsObject) {
           uploadsObject = {}
       } else {
@@ -253,7 +347,7 @@ async function createFolder() {
       uploadsObject[folderName] = [generateUUID(), "folder"]
 
 
-      await setasync("u", encodeURIComponent(dValue), JSON.stringify(uploadsObject))
+      await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject))
       loaduploads()
 
   } else {}
@@ -271,109 +365,160 @@ function generateFileKey() { //key no-one could guess
 }
 
 
+async function setfile(file, number, max, dvvv) {
+    return new Promise((resolve, reject) => {
+        const uploadProgressBar = document.getElementById("upload-progress");
+        const uploadProgressText = document.getElementById("upload-text");
+        const upt2 = document.getElementById("upload-text2");
+  
+        const filename = file.name;
+  
+        if (upload) {
+            alert("You are already uploading a file");
+            reject(new Error("File upload already in progress"));
+            return;
+        }
+        if (downloading) {
+            alert("Can't upload while downloading");
+            reject(new Error("Download in progress"));
+            return;
+        }
+  
+        upload = true;
+  
+        const chunksstorageid = generateUUID();
+  
+        const chunkSize = 0.5 * 1024 * 1024;  // 0.5 MB per chunk
+        const totalChunks = Math.ceil(file.size / chunkSize);
+        let currentChunk = 0;
+  
+        uploadProgressBar.style.width = `0%`;
+        uploadProgressText.textContent = `Uploading ${filename}... 0%`;
+        upt2.textContent = `0 MB / ${(file.size / (1024 * 1024)).toFixed(2)} MB\n${number}/${max} Files`;
+        document.title = `0% ${number}/${max}`;
 
 
-async function setfile(file, number, max) {
-  return new Promise((resolve, reject) => {
-      const uploadProgressBar = document.getElementById("upload-progress");
-      const uploadProgressText = document.getElementById("upload-text");
-      const upt2 = document.getElementById("upload-text2");
-
-      const filename = file.name;
-
-      if (upload) {
-          alert("You are already uploading a file");
-          reject(new Error("File upload already in progress"));
-          return;
-      }
-      if (downloading) {
-          alert("Can't upload while downloading");
-          reject(new Error("Download in progress"));
-          return;
-      }
-
-      upload = true;
-
-      const chunksstorageid = generateUUID();
-      const dvvv = encodeURIComponent(dValue);
-
-      const chunkSize = 0.5 * 1024 * 1024;
-      const totalChunks = Math.ceil(file.size / chunkSize);
-      let currentChunk = 0;
-
-      function readChunk(start) {
-          const end = Math.min(start + chunkSize, file.size);
-          const chunk = file.slice(start, end);
-
-          const reader = new FileReader();
-
-          reader.onload = async function() {
-              const chunkData = reader.result;
-              await sendChunk(chunkData, currentChunk);
-
-              // Update progress bar and text
-              currentChunk++;
-
-              const progress = (currentChunk / totalChunks) * 100;
-              uploadProgressBar.style.width = `${progress}%`;
-              uploadProgressText.textContent = `Uploading ${filename}... ${progress.toFixed(2)}%`;
-
-              const uploadedMB = (currentChunk * chunkSize) / (1024 * 1024);
-              const totalMB = file.size / (1024 * 1024);
-              upt2.textContent = `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB\n${number}/${max} Files`;
-
-              document.title = `${progress.toFixed(2)}%`;
-
-              // If there are more chunks, read the next chunk
-              if (currentChunk < totalChunks) {
-                  readChunk(start + chunkSize);
-              } else {
-                  uploadProgressText.textContent = `Connecting...`;
-                  upt2.textContent = ``;
-                  const uploadProgressPopup = document.getElementById("upload-progress-popup");
-                  uploadProgressPopup.style.display = "none";
-
-                  let uploadsObject = await getasync("u", dvvv);
-                  if (!uploadsObject) {
-                      uploadsObject = {};
-                  } else {
-                      uploadsObject = JSON.parse(uploadsObject);
-                  }
-
-                  uploadsObject[filename] = [generateUUID(), chunksstorageid, totalChunks, file.size];
-
-                  await setasync("u", dvvv, JSON.stringify(uploadsObject));
-                  loaduploads();
-
-                  upload = false;
-                  document.title = `Roblox Datastore's - Cloud Storage`;
-
-                  // Resolve the promise here
-                  resolve();
-              }
-          };
-
-          reader.onerror = function() {
-              console.error("Error reading file chunk");
-              reject(new Error("Error reading file chunk"));
-          };
-
-          // Read the chunk as an ArrayBuffer
-          reader.readAsArrayBuffer(chunk);
-      }
-
-      readChunk(0);
-
-      async function sendChunk(chunkData, chunkid) {
-          await setasync(chunksstorageid, chunkid.toString(), chunkData);
-      }
-  });
-}
-
+        function createUploadPromises() {
+            // Group chunks in batches of 5
+            const promises = [];
+            for (let i = 0; i < 5 && currentChunk < totalChunks; i++, currentChunk++) {
+                const THISCHUNK = currentChunk
+                
+                const start = currentChunk * chunkSize;
+                const end = Math.min(start + chunkSize, file.size);
+                const chunk = file.slice(start, end);
+  
+                const reader = new FileReader();
+  
+                const promise = new Promise((resolve, reject) => {
+                    reader.onload = async function() {
+                        const chunkData = reader.result;
+  
+                        // Send chunk data
+                        await sendChunk(chunkData, THISCHUNK);
+  
+                        let uploadedMB = (currentChunk * chunkSize) / (1024 * 1024);
+                        const totalMB = file.size / (1024 * 1024);
+                        if (uploadedMB > totalMB) {
+                            uploadedMB = totalMB
+                        }
+                        const progress = (currentChunk / totalChunks) * 100;
+  
+                        // Display progress and speed
+                        uploadProgressBar.style.width = `${progress}%`;
+                        uploadProgressText.textContent = `Uploading ${filename}... ${progress.toFixed(2)}%`;
+                        upt2.textContent = `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB\n${number}/${max} Files`;
+                        document.title = `${progress.toFixed(2)}% ${number}/${max}`;
+  
+                        resolve();
+                    };
+  
+                    reader.onerror = function() {
+                        reject(new Error("Error reading file chunk"));
+                    };
+  
+                    reader.readAsArrayBuffer(chunk);
+                });
+  
+                promises.push(promise);
+            }
+  
+            return promises;
+        }
+  
+        function uploadChunks() {
+            // Run 5 promises at once
+            const uploadBatch = createUploadPromises();
+  
+            if (uploadBatch.length > 0) {
+                // Wait for the 5 promises to finish
+                Promise.all(uploadBatch).then(() => {
+                    // Once the batch finishes, check if there are more chunks to upload
+                    if (currentChunk < totalChunks) {
+                        uploadChunks();
+                    } else {
+                        finishUpload();
+                    }
+                }).catch((error) => {
+                    console.error("Error during batch upload:", error);
+                    reject(error);
+                });
+            }
+        }
+  
+        async function sendChunk(chunkData, chunkid) {
+            await setasync(chunksstorageid, chunkid.toString(), chunkData);
+        }
+  
+        async function finishUpload() {
+            uploadProgressText.textContent = `Connecting...`;
+            upt2.textContent = ``;
+            const uploadProgressPopup = document.getElementById("upload-progress-popup");
+            uploadProgressPopup.style.display = "none";
+  
+            let uploadsObject = await getasync("u", dvvv.split("/").pop());
+            if (!uploadsObject) {
+                uploadsObject = {};
+            } else {
+                uploadsObject = JSON.parse(uploadsObject);
+            }
+  
+            uploadsObject[filename] = [generateUUID(), chunksstorageid, totalChunks, file.size];
+  
+            await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject));
+            if (dvvv == dValue) {
+                loaduploads();
+            }
+  
+            upload = false;
+            resolve();
+        }
+  
+        // Start the upload process
+        uploadChunks();
+    });
+  }
+  
 
 
 async function handleFileSelection(event) {
   const allfiles = event.target.files.length;
+
+  const dvvv = dValue;
+
+    let uploadsObject = await getasync("u", dvvv.split("/").pop())
+    if (!uploadsObject) {
+        uploadsObject = {}
+    } else {
+        uploadsObject = JSON.parse(uploadsObject)
+    }
+    for (const file of (event.target.files)) {
+        let n = file.name
+        if (uploadsObject[n]) {
+            return alert(`There is already a file with the same name ${n}`)
+        }
+    
+    }
 
   let i = 0
   for (const file of (event.target.files)) {
@@ -385,9 +530,11 @@ async function handleFileSelection(event) {
       const uploadProgressText = document.querySelector("#upload-progress-popup");
       const updateInterval = 100;
 
-      await setfile(file, i, allfiles);
+
+      await setfile(file, i, allfiles, dvvv);
 
   };
+  document.title = `Roblox Datastore's - Cloud Storage`;
 
 }
 
@@ -400,7 +547,7 @@ function delay(ms) {
 
 let downloading = false
 
-async function downloadfile(filename, chunkid, totalchunks, filesize) {
+async function downloadfile(filename, chunkid, totalchunks, filesize, num, max, returnasblob) {
   if (downloading) {
       alert("You are already downloading a file.")
       return
@@ -420,30 +567,46 @@ async function downloadfile(filename, chunkid, totalchunks, filesize) {
 
 
   let allchunks = []
+  let promises = [];
+  uploadProgressBar.style.width = `0%`;
+  uploadProgressText.textContent = `Downloading ${filename}... 0%`;
+  const totalMB = filesize / (1024 * 1024);
+  upt2.textContent = `0 MB / ${totalMB.toFixed(2)} MB\n${num}/${max} Files`;
 
+  let on = 0
   for (let i = 0; i < totalchunks; i++) {
+    // Collect the promises for fetching chunks
+    promises.push(getasync(chunkid, i.toString(), true).then(chunk => {
+        on += 1
+        uploadedMB = (on * 512) / (1024);
+        upt2.textContent = `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB\n${num}/${max} Files`;
 
-      const uploadedMB = (i * 512) / (1024);
+        // Update the progress bar and title
+        const progress = (on / totalchunks) * 100;
+        uploadProgressBar.style.width = `${progress}%`;
+        uploadProgressText.textContent = `Downloading ${filename}... ${progress.toFixed(2)}%`;
+        document.title = `${progress.toFixed(2)}% ${num}/${max}`;
+        
+        allchunks[i] = chunk;
+    }));
 
-      const totalMB = filesize / (1024 * 1024);
-      upt2.textContent = `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB`;
-
-      const chunk = await getasync(chunkid, i.toString(), true)
-      allchunks.push(chunk)
-
-      const progress = (i / totalchunks) * 100;
-      uploadProgressBar.style.width = `${progress}%`;
-      uploadProgressText.textContent = `Downloading ${filename}... ${progress.toFixed(2)}%`;
-      document.title = `${progress.toFixed(2)}%`
+    // Every 5 requests, wait for them to finish
+    if (promises.length === 50 || i === totalchunks - 1) {
+        await Promise.all(promises);
+        promises = []; // Reset promises array for the next batch
+    }
 
 
-
-
-  }
+}
 
   uploadProgressText.textContent = `Connecting...`;
   uploadProgressPopup.style.display = "none";
   const combinedBlob = new Blob(allchunks);
+
+  if (returnasblob) {
+    downloading = false
+    return combinedBlob
+  }
 
   const downloadLink = document.createElement("a");
   const url = URL.createObjectURL(combinedBlob);
@@ -453,12 +616,159 @@ async function downloadfile(filename, chunkid, totalchunks, filesize) {
   downloadLink.click();
   downloading = false
 
-  document.getElementById("uploads-container").appendChild(downloadLink)
-  document.title = `Roblox Datastore's - Cloud Storage`
 
+  document.getElementById("uploads-container").appendChild(downloadLink)
+  document.title = `Roblox Datastore's - Cloud Storage`;
 
 }
 
+async function getfileasBLOB(chunkid, totalchunks) {
+    let allchunks = []
+    let promises = []
+
+    for (let i = 0; i < totalchunks; i++) {
+        promises.push(getasync(chunkid, i.toString(), true).then(chunk => {
+            allchunks[i] = chunk
+        }))
+        
+        if (promises.length === 50 || i === totalchunks - 1) {
+            await Promise.all(promises)
+            promises = [] // Reset promises array for next batch
+        }
+    }
+    
+    return new Blob(allchunks)
+}
+
+
+
+async function blobExists(chunkid) {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open("thumbnails");
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+
+            // Create object store if it doesn't already exist
+            if (!db.objectStoreNames.contains("ThumbnailsStore")) {
+                db.createObjectStore("ThumbnailsStore", { keyPath: "chunkid" });
+            }
+        };
+
+
+        request.onsuccess = (event) => {
+            const db = event.target.result;
+
+            const transaction = db.transaction("ThumbnailsStore", "readonly");
+            const objectStore = transaction.objectStore("ThumbnailsStore");
+            const getRequest = objectStore.get(chunkid);
+
+            getRequest.onsuccess = (event) => {
+                const result = event.target.result;
+                resolve(!!result); // Resolve to true if the result exists, false otherwise
+            };
+
+            getRequest.onerror = () => {
+                reject(new Error("Failed to check blob existence in IndexedDB."));
+            };
+        };
+
+        request.onerror = () => {
+            reject(new Error("Failed to open IndexedDB."));
+        };
+    });
+}
+
+
+async function fetchcachedblob(chunkid) {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open("thumbnails");
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+
+            // Create object store if it doesn't already exist
+            if (!db.objectStoreNames.contains("ThumbnailsStore")) {
+                db.createObjectStore("ThumbnailsStore", { keyPath: "chunkid" });
+            }
+        };
+
+
+        request.onsuccess = (event) => {
+            const db = event.target.result;
+
+            const transaction = db.transaction("ThumbnailsStore", "readonly");
+            const objectStore = transaction.objectStore("ThumbnailsStore");
+            const getRequest = objectStore.get(chunkid);
+
+            getRequest.onsuccess = (event) => {
+                const result = event.target.result;
+                if (result && result.blob) {
+                    resolve(result.blob);
+                } else {
+                    reject(new Error("Thumbnail not found in IndexedDB for the given chunkid."));
+                }
+            };
+
+            getRequest.onerror = () => {
+                reject(new Error("Failed to retrieve thumbnail from IndexedDB."));
+            };
+        };
+
+        request.onerror = () => {
+            reject(new Error("Failed to open IndexedDB."));
+        };
+    });
+}
+
+async function setCachedBlob(chunkid, blob) {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open("thumbnails");
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+
+            // Create object store if it doesn't already exist
+            if (!db.objectStoreNames.contains("ThumbnailsStore")) {
+                db.createObjectStore("ThumbnailsStore", { keyPath: "chunkid" });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            const db = event.target.result;
+
+            const transaction = db.transaction("ThumbnailsStore", "readwrite");
+            const objectStore = transaction.objectStore("ThumbnailsStore");
+
+            // Add or update the blob in the object store
+            const putRequest = objectStore.put({ chunkid, blob });
+
+            putRequest.onsuccess = () => {
+                resolve(`Blob with chunkid '${chunkid}' has been cached.`);
+            };
+
+            putRequest.onerror = () => {
+                reject(new Error("Failed to cache the blob in IndexedDB."));
+            };
+        };
+
+        request.onerror = () => {
+            reject(new Error("Failed to open IndexedDB."));
+        };
+    });
+}
+
+
+
+function getFileExtension(fileName) {
+    var parts = fileName.split('.');
+    if (parts.length > 1) {
+        return parts.pop();
+    }
+    return ""; // If no extension found
+}
+
+let deleting = false
 
 async function createitems(uploadsObject, dva) {
   if (dValue != dva) {
@@ -484,6 +794,105 @@ async function createitems(uploadsObject, dva) {
   folders.sort((a, b) => a[0].localeCompare(b[0]));
   files.sort((a, b) => a[0].localeCompare(b[0]));
 
+  function showbin() {
+    const link = document.createElement("a");
+    link.classList.add("itemlol")
+  
+    link.addEventListener("click", function(event) {
+        event.preventDefault();
+        dValue = "root/Bin"
+        dValueLook = "root/Bin"
+        loaduploads()
+    });
+  
+    const div = document.createElement("div");
+    div.className = "list-item folder"; // Apply a CSS class for styling
+    div.style.backgroundColor = "#5AB0FA"; // Set the background color
+    
+    const span = document.createElement("span");
+    span.textContent = "🗑️Bin";
+  
+  
+    const downloadbtn = document.createElement("i")
+    downloadbtn.textContent = "download"
+    downloadbtn.classList.add("material-icons")
+    downloadbtn.classList.add("delicon")
+  
+    downloadbtn.addEventListener("click", async function(event) {
+      event.stopPropagation();
+      const zip = new JSZip();
+  
+      const dvvv = dValue
+  
+  
+      async function dlfollol(prevfol, folderID, mainfolder) {
+  
+          let uploadsObject = await getasync("u", folderID)
+          if (!uploadsObject) {
+              uploadsObject = {}
+          } else {
+              uploadsObject = JSON.parse(uploadsObject)
+          }
+          console.log(uploadsObject)
+  
+          let on = 0
+  
+          const folTOADD = prevfol+"/"+folderID
+  
+          let nonFolderCount = 0;
+          for (const i in uploadsObject) {
+              const data = uploadsObject[i];
+              if (data[1] !== "folder") {
+                  nonFolderCount++;
+              }
+          }
+  
+          for (const i in uploadsObject) {
+              on += 1
+              console.log(i)
+              const data = uploadsObject[i]
+              console.log(data)
+              if (data[1] != "folder") {
+                  const blob = await downloadfile(i, data[1], data[2], data[3], on, nonFolderCount, true)
+                  console.log(blob)
+                  mainfolder.file(i, blob);
+              } else {
+                  const myFolder = mainfolder.folder(i);
+                  await dlfollol(folTOADD, data[0], myFolder)
+              }
+          }
+      }
+  
+      await dlfollol(dvvv, "Bin", zip)
+  
+  
+  
+      document.title = `Roblox Datastore's - Cloud Storage`;
+  
+      zip.generateAsync({ type: "blob" })
+      .then(function(content) {
+          const downloadLink = document.createElement("a");
+          const url = URL.createObjectURL(content);
+          downloadLink.href = url;
+          downloadLink.download = 'Bin.zip'; // Replace 'myZip.zip' with desired filename
+          downloadLink.textContent = `Download ready!: ${downloadLink.download}`;
+          downloadLink.click();
+      });
+  
+  });
+  
+    div.appendChild(span);
+    div.appendChild(downloadbtn)
+    link.appendChild(div);
+    uploadsContainer.appendChild(link);
+  }
+
+
+  if (dva == "root") {
+    showbin()
+  }
+
+
 
   // Create and append folder entries (colored yellow)
   folders.forEach(([filename, filelink]) => {
@@ -497,6 +906,7 @@ async function createitems(uploadsObject, dva) {
           loaduploads()
       });
 
+    
       const div = document.createElement("div");
       div.className = "list-item folder"; // Apply a CSS class for styling
       div.style.backgroundColor = "#5AB0FA"; // Set the background color
@@ -507,29 +917,115 @@ async function createitems(uploadsObject, dva) {
       const delbutton = document.createElement("i")
       delbutton.textContent = "delete"
       delbutton.classList.add("material-icons")
+      delbutton.classList.add("delicon")
+
+      const downloadbtn = document.createElement("i")
+      downloadbtn.textContent = "download"
+      downloadbtn.classList.add("material-icons")
+      downloadbtn.classList.add("downfol")
+
+
 
       delbutton.addEventListener("click", async function(event) {
-          event.stopPropagation();
-          if (confirm(`Would you like to delete folder ${filename}`)) {
+        event.stopPropagation();
 
-              let uploadsObject = await getasync("u", encodeURIComponent(dValue))
+        if (deleting) {
+            return alert("Please wait for the previous delete")
+        }
+        
+       
+          if (confirm(`Would you like to move folder ${filename} to the bin`)) {
+            deleting = true
+              let uploadsObject = await getasync("u", dValue.split("/").pop())
               if (!uploadsObject) {
                   uploadsObject = {}
               } else {
                   uploadsObject = JSON.parse(uploadsObject)
               }
 
+              let Binobjects = await getasync("u", "Bin")
+              if (!Binobjects) {
+                Binobjects = {}
+              } else {
+                Binobjects = JSON.parse(Binobjects)
+              }
+
+              Binobjects[filename] = uploadsObject[filename]
               delete uploadsObject[filename]
-
-              await setasync("u", encodeURIComponent(dValue), JSON.stringify(uploadsObject))
+              await setasync("u", "Bin", JSON.stringify(Binobjects))
+              await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
               loaduploads()
-
-
+              deleting = false
           }
       });
 
+      downloadbtn.addEventListener("click", async function(event) {
+        event.stopPropagation();
+        const zip = new JSZip();
+
+        const dvvv = dValue
+
+
+        async function dlfollol(prevfol, folderID, mainfolder) {
+
+            let uploadsObject = await getasync("u", folderID)
+            if (!uploadsObject) {
+                uploadsObject = {}
+            } else {
+                uploadsObject = JSON.parse(uploadsObject)
+            }
+            console.log(uploadsObject)
+    
+            let on = 0
+    
+            let nonFolderCount = 0;
+            for (const i in uploadsObject) {
+                const data = uploadsObject[i];
+                if (data[1] !== "folder") {
+                    nonFolderCount++;
+                }
+            }
+
+            for (const i in uploadsObject) {
+                on += 1
+                console.log(i)
+                const data = uploadsObject[i]
+                console.log(data)
+                if (data[1] != "folder") {
+                    const blob = await downloadfile(i, data[1], data[2], data[3], on, nonFolderCount, true)
+                    console.log(blob)
+                    mainfolder.file(i, blob);
+                } else {
+                    const myFolder = mainfolder.folder(i);
+                    await dlfollol(folderID, data[0], myFolder)
+                }
+            }
+        }
+
+        await dlfollol(dvvv, filelink[0], zip)
+
+ 
+
+        document.title = `Roblox Datastore's - Cloud Storage`;
+
+        zip.generateAsync({ type: "blob" })
+        .then(function(content) {
+            const downloadLink = document.createElement("a");
+            const url = URL.createObjectURL(content);
+            downloadLink.href = url;
+            downloadLink.download = filename+'.zip'; // Replace 'myZip.zip' with desired filename
+            downloadLink.textContent = `Download ready!: ${downloadLink.download}`;
+            downloadLink.click();
+        });
+
+    });
+
       div.appendChild(span);
-      div.appendChild(delbutton)
+      if (dva.split("/").pop() != "Bin") {
+        div.appendChild(delbutton)
+      }
+
+      div.appendChild(downloadbtn)
       link.appendChild(div);
       uploadsContainer.appendChild(link);
 
@@ -537,17 +1033,9 @@ async function createitems(uploadsObject, dva) {
 
   });
 
-  function getFileExtension(fileName) {
-      var parts = fileName.split('.');
-      if (parts.length > 1) {
-          return parts.pop();
-      }
-      return ""; // If no extension found
-  }
-
 
   // Create and append file entries
-  files.forEach(([filename, filelink]) => {
+  files.forEach( async ([filename, filelink]) => {
       const link = document.createElement("a");
       link.classList.add("itemlol")
 
@@ -560,46 +1048,97 @@ async function createitems(uploadsObject, dva) {
           e = "❓"
       }
 
-      const span = document.createElement("span");
-      span.textContent = e + filename;
+      if (e === "🖼️") {
+        const img = document.createElement("img");
+        let imgsrc = ""
+        try {
+            const imgblob = await fetchcachedblob(filelink[1])
+            imgsrc = URL.createObjectURL(imgblob);
+        } catch(err) {
+            imgsrc = ""
+        }
+     
+        img.src = imgsrc
+        img.className = "thumbnail"; 
+        img.style.width = "128px"; 
+        img.style.height = "128px";
+        img.style.objectFit = "cover";
+
+        img.onload = () => {
+            URL.revokeObjectURL(img.src);
+        };
+
+        div.appendChild(img);
+
+
+        const span = document.createElement("span");
+        span.textContent = filename;
+        div.appendChild(span);
+      } else {
+        const span = document.createElement("span");
+        span.textContent = e + filename;
+        div.appendChild(span);
+      }
 
       const delbutton = document.createElement("i")
       delbutton.textContent = "delete"
       delbutton.classList.add("material-icons")
+      delbutton.classList.add("delicon")
 
       delbutton.addEventListener("click", async function(event) {
-          event.stopPropagation();
-          if (confirm(`Would you like to delete file ${filename}`)) {
+        event.stopPropagation();
+        if (deleting) {
+            return alert("Please wait for the previous delete")
+        }
+    
+          if (confirm(`Would you like to move file ${filename} to the bin`)) {
+            deleting = true
 
-              let uploadsObject = await getasync("u", encodeURIComponent(dValue))
+              let uploadsObject = await getasync("u", dValue.split("/").pop())
               if (!uploadsObject) {
                   uploadsObject = {}
               } else {
                   uploadsObject = JSON.parse(uploadsObject)
               }
 
+              let Binobjects = await getasync("u", "Bin")
+              if (!Binobjects) {
+                Binobjects = {}
+              } else {
+                Binobjects = JSON.parse(Binobjects)
+              }
+              
+
+              Binobjects[filename] = uploadsObject[filename]
               delete uploadsObject[filename]
-
-              await setasync("u", encodeURIComponent(dValue), JSON.stringify(uploadsObject))
+              await setasync("u", "Bin", JSON.stringify(Binobjects))
+              await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
               loaduploads()
-
+              deleting = false
 
           }
       });
 
 
-      div.appendChild(span);
-      div.appendChild(delbutton)
+      if (dva == dva.split("/").pop()) {
+        div.appendChild(delbutton)
+      }
       link.appendChild(div);
       uploadsContainer.appendChild(link);
 
 
       link.addEventListener("click", function(event) {
           event.preventDefault();
-          downloadfile(filename, filelink[1], filelink[2], filelink[3])
+          downloadfile(filename, filelink[1], filelink[2], filelink[3], 1, 1)
       });
 
   });
+
+
+
+
+
+
 }
 
 
@@ -608,30 +1147,36 @@ async function loaduploads() {
   createpath()
   createitems({}, dValue)
 
-  let i = localStorage.getItem("up1" + encodeURIComponent(dValue))
 
+  let i = localStorage.getItem("up1" + dValue.split("/").pop())
 
+  let cachedUploadsObject
   if (i) {
-      const cachedUploadsObject = JSON.parse(i);
+      cachedUploadsObject = JSON.parse(i);
       createitems(cachedUploadsObject, dValue)
   }
 
   let started = dValue
 
-  // const response = await fetch("/uploads?d=" + encodeURIComponent(started));
+  let uploadsObject = await getasync("u", started.split("/").pop())
 
-  let uploadsObject = await getasync("u", encodeURIComponent(started))
   if (!uploadsObject) {
       uploadsObject = {}
   } else {
       uploadsObject = JSON.parse(uploadsObject)
-      localStorage.setItem("up1" + encodeURIComponent(started), JSON.stringify(uploadsObject));
+      localStorage.setItem("up1" + started.split("/").pop(), JSON.stringify(uploadsObject));
   }
 
+  if (cachedUploadsObject) {
+    if (JSON.stringify(cachedUploadsObject) != JSON.stringify(uploadsObject)) {
+        createitems(uploadsObject, started)
+    }
+  } else {
+    createitems(uploadsObject, started)
+  }
 
+  
 
-
-  createitems(uploadsObject, started)
 
 
 }
@@ -788,7 +1333,7 @@ function decryptData(encryptedData, binary) {
 
 
 
-let prefix = "fdfaaf"
+let prefix = "faei0hf"
 
 async function getasync(name, key, binary) {
   while (true) {
@@ -892,3 +1437,52 @@ async function setasync(name, key, data) {
       }
   }
 }
+
+async function cacheblobs() {
+    while (true) {
+        async function checkforimages(started) {
+            let uploadsObject = await getasync("u", started)
+            if (!uploadsObject) {
+                uploadsObject = {}
+            } else {
+                uploadsObject = JSON.parse(uploadsObject)
+            }
+        
+            for (const i in uploadsObject) {
+                if (uploadsObject[i][1] == "folder") {
+                    await checkforimages(uploadsObject[i][0])
+                } else {
+                    const et = getFileExtension(i)
+                    let e = emoji[et]
+                    if (e == "🖼️") {
+                        const a = await blobExists(uploadsObject[i][1])
+                        if (!a) {
+                            console.log(uploadsObject[i])
+                            const fileasblob = await getfileasBLOB(uploadsObject[i][1], uploadsObject[i][2])
+                            await setCachedBlob(uploadsObject[i][1], fileasblob)
+                        }
+    
+                    }
+                  
+                    
+    
+                }
+    
+            }
+        }
+    
+        if (!downloading && !upload) {
+            checkforimages("root")
+        }
+
+        await delay(5000)
+    }
+
+
+
+
+  
+    
+}
+
+cacheblobs()
