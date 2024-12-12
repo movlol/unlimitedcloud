@@ -1472,7 +1472,7 @@ async function cacheblobs() {
         }
     
         if (!downloading && !upload) {
-            checkforimages("root")
+            await checkforimages("root")
         }
 
         await delay(5000)
