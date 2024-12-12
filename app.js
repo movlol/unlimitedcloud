@@ -968,7 +968,7 @@ async function setCachedBlob(chunkid, blob) {
 function getFileExtension(fileName) {
     var parts = fileName.split('.');
     if (parts.length > 1) {
-        return parts.pop();
+        return parts.pop().toLowerCase();
     }
     return ""; // If no extension found
 }
