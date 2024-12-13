@@ -1,21 +1,6 @@
 let ffmpeg;
 let starttime;
 
-async function setupffmpeg() {
-    while (!window.FFmpeg) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    const FFmpeg = window.FFmpeg
-    ffmpeg = new FFmpeg()
-    console.log(ffmpeg)
-    ffmpeg.on("log", ({message}) => console.log(message))
-    const coreURL = "/ffmpeg-core.js"
-    await ffmpeg.load({coreURL})
-    window.ffmpegloaded = true
-    console.log("FFmpeg has loaded!")
-}
-setupffmpeg()
-
 const supportedImageExtensions = [
     'jpg', 'jpeg', 'png', 'bmp', 'gif', 'tiff', 'webp'
 ];
@@ -230,12 +215,13 @@ var emoji = {
 
 
 
-var upload = false
+var moddingfiles = false
+
+
 window.addEventListener("beforeunload", function(event) {
-  if (upload) {
+  if (moddingfiles) {
       event.returnValue = "You are still uploading";
   }
-
 });
 
 
@@ -277,88 +263,6 @@ fileInput.addEventListener('change', handleFileSelection);
 const folderinput = document.getElementById('folder-input');
 folderinput.addEventListener('change', handleFolderSelection);
 
-async function handleFolderSelection(event) {
-    const allfiles = event.target.files.length;
-    console.log(event.target.files)
-    var str = event.target.files[0].webkitRelativePath;
-    const foldername = str.substring(0, str.lastIndexOf("/") + 0);
-    console.log(foldername)
-
-    
-    let dvvv = dValue;
-    console.log(dvvv)
-
-    let uploadsObject = await getasync("u", dvvv.split("/").pop())
-    if (!uploadsObject) {
-        uploadsObject = {}
-    } else {
-        uploadsObject = JSON.parse(uploadsObject)
-    }
-    let folderid = generateUUID()
-
-    if (uploadsObject[foldername]) {
-        return alert(`There is already a folder with the same name ${foldername}`)
-    }
-
-    uploadsObject[foldername] = [folderid, "folder"]
-
-
-    await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject))
-    loaduploads()
-
-    const orid = dvvv+"/"+folderid
-
-    let createdfolders = {}
-
-    let i = 0
-    for (const file of (event.target.files)) {
-        i += 1
-        const uploadProgressPopup = document.getElementById("upload-progress-popup");
-        uploadProgressPopup.style.display = "block";
-  
-        const uploadProgressBar = document.getElementById("upload-progress");
-        const uploadProgressText = document.querySelector("#upload-progress-popup");
-        const updateInterval = 100;
-        let items = file.webkitRelativePath.split("/")
-        items.shift();
-        items.pop();
-
-        console.log(items)
-        let deep = orid
-        for (const i of items) {
-            if (!createdfolders[deep+i]) {
-
-                let uploadsObject = await getasync("u", deep.split("/").pop())
-                if (!uploadsObject) {
-                    uploadsObject = {}
-                } else {
-                    uploadsObject = JSON.parse(uploadsObject)
-                }
-                let folderid = generateUUID()
-            
-                uploadsObject[i] = [folderid, "folder"]
-
-                await setasync("u", deep.split("/").pop(), JSON.stringify(uploadsObject))
-
-                createdfolders[deep+i] = folderid
-                deep += "/"+folderid
-
-            } else {
-                deep += "/"+createdfolders[deep+i]
-            }
-        }
-        console.log(deep)
-  
-
-        const thumbnailchunkid = await trymakethumbnail(file)
-        await setfile(file, i, allfiles, deep.split("/").pop(), thumbnailchunkid);
-  
-    };
-
-    document.title = `Unlimited - Cloud Storage`;
-
-  
-  }
 
 
 
@@ -371,6 +275,13 @@ function uploadFolder() {
   }
 
 async function createFolder() {
+    if (moddingfiles) {
+        return alert("Another process is running. please wait");
+    }
+
+
+    moddingfiles = true
+
     const dvvv = dValue;
   const folderName = prompt("Folder Name:");
 
@@ -386,6 +297,7 @@ async function createFolder() {
 
 
       await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject))
+      moddingfiles = false
       loaduploads()
 
   } else {}
@@ -403,7 +315,7 @@ function generateFileKey() { //key no-one could guess
 }
 
 
-async function setfile(file, number, max, dvvv, thumbnailchunkid) {
+async function setfile(file, number, max, dvvv, thumbnailchunkid, allfilessize, bytesuploadedallfiles, filenameV) {
     return new Promise((resolve, reject) => {
         const uploadProgressBar = document.getElementById("upload-progress");
         const uploadProgressText = document.getElementById("upload-text");
@@ -411,30 +323,20 @@ async function setfile(file, number, max, dvvv, thumbnailchunkid) {
   
         const filename = file.name;
   
-        if (upload) {
-            alert("You are already uploading a file");
-            reject(new Error("File upload already in progress"));
-            return;
-        }
-        if (downloading) {
-            alert("Can't upload while downloading");
-            reject(new Error("Download in progress"));
-            return;
-        }
-  
-        upload = true;
-  
         const chunksstorageid = generateUUID();
   
         const chunkSize = 0.5 * 1024 * 1024;  // 0.5 MB per chunk
         const totalChunks = Math.ceil(file.size / chunkSize);
         let currentChunk = 0;
   
-        uploadProgressBar.style.width = `0%`;
-        uploadProgressText.textContent = `Uploading ${filename}... 0%`;
-        upt2.textContent = `0 MB / ${(file.size / (1024 * 1024)).toFixed(2)} MB\n${number}/${max} Files`;
-        document.title = `0% ${number}/${max}`;
+        const progress = (bytesuploadedallfiles / allfilessize) * 100;
 
+        uploadProgressBar.style.width = `${progress.toFixed(2)}%`;
+        uploadProgressText.textContent = `Uploading ${filenameV}... ${progress.toFixed(2)}%`;
+        upt2.textContent = `${(bytesuploadedallfiles / (1024 * 1024)).toFixed(2)} MB / ${(allfilessize / (1024 * 1024)).toFixed(2)} MB`;
+        document.title = `${progress.toFixed(2)}%`;
+
+        let uploadedMB = 0
 
         function createUploadPromises() {
             // Group chunks in batches of 5
@@ -451,22 +353,19 @@ async function setfile(file, number, max, dvvv, thumbnailchunkid) {
                 const promise = new Promise((resolve, reject) => {
                     reader.onload = async function() {
                         const chunkData = reader.result;
+                        console.log("cd", chunkData)
   
                         // Send chunk data
                         await sendChunk(chunkData, THISCHUNK);
-  
-                        let uploadedMB = (currentChunk * chunkSize) / (1024 * 1024);
-                        const totalMB = file.size / (1024 * 1024);
-                        if (uploadedMB > totalMB) {
-                            uploadedMB = totalMB
-                        }
-                        const progress = (currentChunk / totalChunks) * 100;
+                        uploadedMB += chunkData.byteLength
+
+                        const progress = ((bytesuploadedallfiles+uploadedMB) / allfilessize) * 100;
   
                         // Display progress and speed
                         uploadProgressBar.style.width = `${progress}%`;
-                        uploadProgressText.textContent = `Uploading ${filename}... ${progress.toFixed(2)}%`;
-                        upt2.textContent = `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB\n${number}/${max} Files`;
-                        document.title = `${progress.toFixed(2)}% ${number}/${max}`;
+                        uploadProgressText.textContent = `Uploading ${filenameV}... ${progress.toFixed(2)}%`;
+                        upt2.textContent = `${((bytesuploadedallfiles+uploadedMB) / (1024 * 1024)).toFixed(2)} MB / ${(allfilessize / (1024 * 1024)).toFixed(2)} MB`;
+                        document.title = `${progress.toFixed(2)}%`;
   
                         resolve();
                     };
@@ -509,10 +408,6 @@ async function setfile(file, number, max, dvvv, thumbnailchunkid) {
         }
   
         async function finishUpload() {
-            uploadProgressText.textContent = `Connecting...`;
-            upt2.textContent = ``;
-            const uploadProgressPopup = document.getElementById("upload-progress-popup");
-            uploadProgressPopup.style.display = "none";
   
             let uploadsObject = await getasync("u", dvvv.split("/").pop());
             if (!uploadsObject) {
@@ -520,29 +415,35 @@ async function setfile(file, number, max, dvvv, thumbnailchunkid) {
             } else {
                 uploadsObject = JSON.parse(uploadsObject);
             }
+
+            console.log(uploadsObject)
   
             uploadsObject[filename] = [generateUUID(), chunksstorageid, totalChunks, file.size, thumbnailchunkid];
-  
+
             await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject));
             if (dvvv == dValue) {
                 loaduploads();
             }
   
-            upload = false;
             resolve();
         }
   
-        // Start the upload process
-        uploadChunks();
+
+        if (file.size === 0) {
+            console.log("File is empty. Saving empty content.");
+            setasync(chunksstorageid, "0", "").then(() => {
+                finishUpload();
+            })
+        } else {
+            uploadChunks();
+        }
     });
   }
   
 
 async function uploadthumbnail(file, chunksstorageid,) {
     return new Promise((resolve, reject) => {
-        const uploadProgressBar = document.getElementById("upload-progress");
-        const uploadProgressText = document.getElementById("upload-text");
-        const upt2 = document.getElementById("upload-text2");
+
   
         const filename = file.name;
 
@@ -550,11 +451,6 @@ async function uploadthumbnail(file, chunksstorageid,) {
         const chunkSize = 0.5 * 1024 * 1024;  // 0.5 MB per chunk
         const totalChunks = Math.ceil(file.size / chunkSize);
         let currentChunk = 0;
-  
-        uploadProgressBar.style.width = `0%`;
-        uploadProgressText.textContent = `Uploading Thumbnail... 0%`;
-        upt2.textContent = `0 MB / ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-        document.title = `0%`;
 
 
         //doesnt even need to chunk since so small do it anyway just incase? lol
@@ -575,20 +471,6 @@ async function uploadthumbnail(file, chunksstorageid,) {
   
                         // Send chunk data
                         await sendChunk(chunkData, THISCHUNK);
-  
-                        let uploadedMB = (currentChunk * chunkSize) / (1024 * 1024);
-                        const totalMB = file.size / (1024 * 1024);
-                        if (uploadedMB > totalMB) {
-                            uploadedMB = totalMB
-                        }
-                        const progress = (currentChunk / totalChunks) * 100;
-  
-                        // Display progress and speed
-                        uploadProgressBar.style.width = `${progress}%`;
-                        uploadProgressText.textContent = `Uploading Thumbnail... ${progress.toFixed(2)}%`;
-                        upt2.textContent = `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB`;
-                        document.title = `${progress.toFixed(2)}%`;
-  
                         resolve();
                     };
   
@@ -640,72 +522,87 @@ async function uploadthumbnail(file, chunksstorageid,) {
 
 
 async function trymakethumbnail(file) {
-    const uploadProgressPopup = document.getElementById("upload-progress-popup");
-    uploadProgressPopup.style.display = "block";
-    const uploadProgressText = document.getElementById("upload-text");
-    const ext = getFileExtension(file.name);
-    const works = isSupportedByFFmpeg(ext)
-    console.log(works)
-    
     let thumbnailchunkid = ""
+    
+    try {
+        const ext = getFileExtension(file.name);
+        const works = isSupportedByFFmpeg(ext)
+        console.log(works)
+        
+        if (works) {
 
-    if (works) {
+            const FFmpeg = window.FFmpeg
+            ffmpeg = new FFmpeg()
+            console.log(ffmpeg)
+            ffmpeg.on("log", ({message}) => console.log(message))
+            const coreURL = "/ffmpeg-core.js"
+            await ffmpeg.load({coreURL})
+            console.log("FFmpeg has loaded!")
+    
+          filebuff = await new Promise ((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = function(event) {
+                      resolve(event.target.result)
+              };
+              reader.readAsArrayBuffer(file);
+          })
+          const inputname = "input." + ext
+          await ffmpeg.writeFile(inputname, new Uint8Array(filebuff))
+    
+          thumbnailchunkid = generateUUID()
+    
+    
+    
+          try {
+              if (works == "image") {
+                  await ffmpeg.exec([
+                      '-i', inputname,            // Input file
+                      '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Crop filter
+                      '-s', '128x128',            // Resize to 128x128
+                      "thumbnail.png"                  // Output file
+                  ]);
+                  const newdata = await ffmpeg.readFile("thumbnail.png")
+                  const blob = new Blob([newdata], { type: 'image/png' });
+                  const file = new File([blob], "thumbnail.png", { type: 'image/png' });
+                  console.log(file)
+                  whatisthumb = blob
+      
+                  await uploadthumbnail(file, thumbnailchunkid)
+      
+              } else if (works == "video") {
+                  await ffmpeg.exec([
+                      '-i', inputname,                           // Input video
+                      '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Scale and pad to 128x128
+                      '-frames:v', '1',                          // Extract only one frame
+                      '-ss', '00:00:01',                         // Take the frame at 1 second into the video
+                      "thumbnail.png"                            // Output file
+                  ]);
+                  const newdata = await ffmpeg.readFile("thumbnail.png");
+                  const blob = new Blob([newdata], { type: 'image/png' });
+                  const file = new File([blob], "thumbnail.png", { type: 'image/png' });
+                  console.log(file)
+                  whatisthumb = blob
+    
+                  await uploadthumbnail(file, thumbnailchunkid);
+      
+              }
 
-      uploadProgressText.textContent = `Waiting for ffmpeg...`;
-      while (!window.ffmpegloaded) {
-          await delay(100)
-      }
-      filebuff = await new Promise ((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = function(event) {
-                  resolve(event.target.result)
-          };
-          reader.readAsArrayBuffer(file);
-      })
-      const inputname = "input." + ext
-      await ffmpeg.writeFile(inputname, new Uint8Array(filebuff))
-
-      thumbnailchunkid = generateUUID()
-
-
-      try {
-          if (works == "image") {
-              await ffmpeg.exec([
-                  '-i', inputname,            // Input file
-                  '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Crop filter
-                  '-s', '128x128',            // Resize to 128x128
-                  "thumbnail.png"                  // Output file
-              ]);
-              const newdata = await ffmpeg.readFile("thumbnail.png")
-              const blob = new Blob([newdata], { type: 'image/png' });
-              const file = new File([blob], "thumbnail.png", { type: 'image/png' });
-              console.log(file)
-  
-              await uploadthumbnail(file, thumbnailchunkid)
-  
-          } else if (works == "video") {
-              await ffmpeg.exec([
-                  '-i', inputname,                           // Input video
-                  '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Scale and pad to 128x128
-                  '-frames:v', '1',                          // Extract only one frame
-                  '-ss', '00:00:01',                         // Take the frame at 1 second into the video
-                  "thumbnail.png"                            // Output file
-              ]);
-              const newdata = await ffmpeg.readFile("thumbnail.png");
-              const blob = new Blob([newdata], { type: 'image/png' });
-              const file = new File([blob], "thumbnail.png", { type: 'image/png' });
-              console.log(file)
-
-              await uploadthumbnail(file, thumbnailchunkid);
-  
+              await setCachedBlob(thumbnailchunkid, whatisthumb)
+      
+          } catch(err) {
+              console.log(err)
+              thumbnailchunkid = ""
           }
-  
-      } catch(err) {
-            console.log(err)
-          thumbnailchunkid = ""
-      }
+    
+    
+        }
+    
+        if (ffmpeg) {
+            ffmpeg.terminate()
+        }
 
-
+    } catch(err) {
+        console.log(err)
     }
 
     return thumbnailchunkid
@@ -716,7 +613,41 @@ async function trymakethumbnail(file) {
 async function handleFileSelection(event) {
   const allfiles = event.target.files.length;
 
+  if (moddingfiles) {
+    return alert("Another process is running. please wait");
+}
+
+
+moddingfiles = true
+
   const dvvv = dValue;
+
+  const uploadProgressBar = document.getElementById("upload-progress");
+  const uploadProgressText = document.getElementById("upload-text");
+  const upt2 = document.getElementById("upload-text2");
+
+  let filenameV = ""
+  if (allfiles == 1) {
+    filenameV = event.target.files[0].name
+  } else {
+    filenameV = "Multiple Files"
+  }
+
+  let combinedsize = 0
+  for (const file of (event.target.files)) {
+    combinedsize += file.size
+    }
+
+    
+    const uploadProgressPopup = document.getElementById("upload-progress-popup");
+    uploadProgressPopup.style.display = "block";
+
+
+  uploadProgressBar.style.width = `0%`;
+  uploadProgressText.textContent = `Uploading ${filenameV}... 0%`;
+  upt2.textContent = `0 MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB\n`;
+  document.title = `0%`;
+
 
     let uploadsObject = await getasync("u", dvvv.split("/").pop())
     if (!uploadsObject) {
@@ -733,15 +664,138 @@ async function handleFileSelection(event) {
     }
 
   let i = 0
+  let uploaded = 0
   for (const file of (event.target.files)) {
       i += 1
       const thumbnailchunkid = await trymakethumbnail(file)
-      await setfile(file, i, allfiles, dvvv, thumbnailchunkid);
+      await setfile(file, i, allfiles, dvvv, thumbnailchunkid, combinedsize, uploaded, filenameV);
+      uploaded += file.size
 
   };
+
+  uploadProgressText.textContent = ``;
+  upt2.textContent = ``;
+  uploadProgressPopup.style.display = "none";
+
   document.title = `Unlimited - Cloud Storage`;
+  moddingfiles = false
 
 }
+
+async function handleFolderSelection(event) {
+    const allfiles = event.target.files.length;
+    console.log(event.target.files)
+    var str = event.target.files[0].webkitRelativePath;
+    const foldername = str.split("/")[0]
+    console.log(foldername)
+
+    if (moddingfiles) {
+        return alert("Another process is running. please wait");
+    }
+    moddingfiles = true
+        
+    const uploadProgressBar = document.getElementById("upload-progress");
+    const uploadProgressText = document.getElementById("upload-text");
+    const upt2 = document.getElementById("upload-text2");
+        
+    let dvvv = dValue;
+    console.log(dvvv)
+
+    let uploadsObject = await getasync("u", dvvv.split("/").pop())
+    if (!uploadsObject) {
+        uploadsObject = {}
+    } else {
+        uploadsObject = JSON.parse(uploadsObject)
+    }
+    let folderid = generateUUID()
+
+    if (uploadsObject[foldername]) {
+        return alert(`There is already a folder with the same name ${foldername}`)
+    }
+
+    const uploadProgressPopup = document.getElementById("upload-progress-popup");
+    uploadProgressPopup.style.display = "block";
+
+    let combinedsize = 0
+    for (const file of (event.target.files)) {
+      combinedsize += file.size
+    }
+
+
+    uploadProgressBar.style.width = `0%`;
+    uploadProgressText.textContent = `Uploading Folder ${foldername}... 0%`;
+    upt2.textContent = `0 MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB\n`;
+    document.title = `0%`;
+
+
+    uploadsObject[foldername] = [folderid, "folder"]
+
+
+    await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject))
+    loaduploads()
+
+    const orid = dvvv+"/"+folderid
+
+    let createdfolders = {}
+
+    let uploaded = 0
+
+    let i = 0
+    for (const file of (event.target.files)) {
+        console.log(file)
+        i += 1
+
+        let items = file.webkitRelativePath.split("/")
+        items.shift();
+        items.pop();
+
+        console.log(items)
+        let deep = orid
+        for (const i of items) {
+            if (!createdfolders[deep+i]) {
+
+                let uploadsObject = await getasync("u", deep.split("/").pop())
+                if (!uploadsObject) {
+                    uploadsObject = {}
+                } else {
+                    uploadsObject = JSON.parse(uploadsObject)
+                }
+                let folderid = generateUUID()
+            
+                uploadsObject[i] = [folderid, "folder"]
+
+                await setasync("u", deep.split("/").pop(), JSON.stringify(uploadsObject))
+
+                createdfolders[deep+i] = folderid
+                deep += "/"+folderid
+
+            } else {
+                deep += "/"+createdfolders[deep+i]
+            }
+        }
+        console.log(deep)
+  
+
+        const thumbnailchunkid = await trymakethumbnail(file)
+        console.log(thumbnailchunkid)
+        await setfile(file, i, allfiles, deep.split("/").pop(), thumbnailchunkid, combinedsize, uploaded, `Folder ${foldername}`);
+        uploaded += file.size
+  
+    };
+    console.log("done")
+
+
+    uploadProgressText.textContent = ``;
+    upt2.textContent = ``;
+    uploadProgressPopup.style.display = "none";
+  
+    document.title = `Unlimited - Cloud Storage`;
+    moddingfiles = false
+
+  
+  }
+
+
 
 function delay(ms) {
   return new Promise(resolve => {
@@ -750,47 +804,34 @@ function delay(ms) {
 }
 
 
-let downloading = false
 
-async function downloadfile(filename, chunkid, totalchunks, filesize, num, max, returnasblob) {
-  if (downloading) {
-      alert("You are already downloading a file.")
-      return
-  }
-  if (upload) {
-      return alert("Cant download while uploading")
-  }
-
-  downloading = true
-
+async function downloadfile(filename, chunkid, totalchunks, filesize, returnasblob, alreadydownloaded, allfilessize, FilenameV) {
   const uploadProgressPopup = document.getElementById("upload-progress-popup");
   uploadProgressPopup.style.display = "block";
 
   const uploadProgressBar = document.getElementById("upload-progress");
   const uploadProgressText = document.getElementById("upload-text");
   const upt2 = document.getElementById("upload-text2");
-
+  
 
   let allchunks = []
   let promises = [];
-  uploadProgressBar.style.width = `0%`;
-  uploadProgressText.textContent = `Downloading ${filename}... 0%`;
-  const totalMB = filesize / (1024 * 1024);
-  upt2.textContent = `0 MB / ${totalMB.toFixed(2)} MB\n${num}/${max} Files`;
 
+  let downloadedMB = 0
   let on = 0
   for (let i = 0; i < totalchunks; i++) {
     // Collect the promises for fetching chunks
     promises.push(getasync(chunkid, i.toString(), true).then(chunk => {
         on += 1
-        uploadedMB = (on * 512) / (1024);
-        upt2.textContent = `${uploadedMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB\n${num}/${max} Files`;
+        downloadedMB += chunk.size
+    
 
-        // Update the progress bar and title
-        const progress = (on / totalchunks) * 100;
+        upt2.textContent = `${((downloadedMB+alreadydownloaded) / (1024 * 1024)).toFixed(2)} MB / ${((allfilessize) / (1024 * 1024)).toFixed(2)} MB`;
+
+        const progress = ((downloadedMB+alreadydownloaded) / allfilessize) * 100;
         uploadProgressBar.style.width = `${progress}%`;
-        uploadProgressText.textContent = `Downloading ${filename}... ${progress.toFixed(2)}%`;
-        document.title = `${progress.toFixed(2)}% ${num}/${max}`;
+        uploadProgressText.textContent = `Downloading ${FilenameV}... ${progress.toFixed(2)}%`;
+        document.title = `${progress.toFixed(2)}%`;
         
         allchunks[i] = chunk;
     }));
@@ -804,14 +845,15 @@ async function downloadfile(filename, chunkid, totalchunks, filesize, num, max, 
 
 }
 
-  uploadProgressText.textContent = `Connecting...`;
-  uploadProgressPopup.style.display = "none";
+
   const combinedBlob = new Blob(allchunks);
 
   if (returnasblob) {
-    downloading = false
     return combinedBlob
   }
+
+  uploadProgressPopup.style.display = "none";
+  
 
   const downloadLink = document.createElement("a");
   const url = URL.createObjectURL(combinedBlob);
@@ -819,12 +861,10 @@ async function downloadfile(filename, chunkid, totalchunks, filesize, num, max, 
   downloadLink.download = filename
   downloadLink.textContent = `Download ready!: ${filename}`
   downloadLink.click();
-  downloading = false
-
 
   document.getElementById("uploads-container").appendChild(downloadLink)
   document.title = `Unlimited - Cloud Storage`;
-
+  return true
 }
 
 async function getfileasBLOB(chunkid, totalchunks) {
@@ -1018,77 +1058,7 @@ async function createitems(uploadsObject, dva) {
     const span = document.createElement("span");
     span.textContent = "🗑️Bin";
   
-  
-    const downloadbtn = document.createElement("i")
-    downloadbtn.textContent = "download"
-    downloadbtn.classList.add("material-icons")
-    downloadbtn.classList.add("delicon")
-  
-    downloadbtn.addEventListener("click", async function(event) {
-      event.stopPropagation();
-      const zip = new JSZip();
-  
-      const dvvv = dValue
-  
-  
-      async function dlfollol(prevfol, folderID, mainfolder) {
-  
-          let uploadsObject = await getasync("u", folderID)
-          if (!uploadsObject) {
-              uploadsObject = {}
-          } else {
-              uploadsObject = JSON.parse(uploadsObject)
-          }
-          console.log(uploadsObject)
-  
-          let on = 0
-  
-          const folTOADD = prevfol+"/"+folderID
-  
-          let nonFolderCount = 0;
-          for (const i in uploadsObject) {
-              const data = uploadsObject[i];
-              if (data[1] !== "folder") {
-                  nonFolderCount++;
-              }
-          }
-  
-          for (const i in uploadsObject) {
-              on += 1
-              console.log(i)
-              const data = uploadsObject[i]
-              console.log(data)
-              if (data[1] != "folder") {
-                  const blob = await downloadfile(i, data[1], data[2], data[3], on, nonFolderCount, true)
-                  console.log(blob)
-                  mainfolder.file(i, blob);
-              } else {
-                  const myFolder = mainfolder.folder(i);
-                  await dlfollol(folTOADD, data[0], myFolder)
-              }
-          }
-      }
-  
-      await dlfollol(dvvv, "Bin", zip)
-  
-  
-  
-      document.title = `Unlimited - Cloud Storage`;
-  
-      zip.generateAsync({ type: "blob" })
-      .then(function(content) {
-          const downloadLink = document.createElement("a");
-          const url = URL.createObjectURL(content);
-          downloadLink.href = url;
-          downloadLink.download = 'Bin.zip'; // Replace 'myZip.zip' with desired filename
-          downloadLink.textContent = `Download ready!: ${downloadLink.download}`;
-          downloadLink.click();
-      });
-  
-  });
-  
     div.appendChild(span);
-    div.appendChild(downloadbtn)
     link.appendChild(div);
     uploadsContainer.appendChild(link);
   }
@@ -1156,7 +1126,7 @@ async function createitems(uploadsObject, dva) {
                 Binobjects = JSON.parse(Binobjects)
               }
 
-              Binobjects[filename] = uploadsObject[filename]
+              Binobjects[filename + " " + generateUUID()] = uploadsObject[filename]
               delete uploadsObject[filename]
               await setasync("u", "Bin", JSON.stringify(Binobjects))
               await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
@@ -1167,12 +1137,68 @@ async function createitems(uploadsObject, dva) {
 
       downloadbtn.addEventListener("click", async function(event) {
         event.stopPropagation();
+
+        if (moddingfiles) {
+            return alert("Another process is running. please wait");
+        }
+        
+
+
+        moddingfiles = true
+
         const zip = new JSZip();
 
         const dvvv = dValue
 
+        let ALLfilessize = 0
+        let foundfiles = 0
 
-        async function dlfollol(prevfol, folderID, mainfolder) {
+        const uploadProgressPopup = document.getElementById("upload-progress-popup");
+        uploadProgressPopup.style.display = "block";
+      
+        const uploadProgressBar = document.getElementById("upload-progress");
+        const uploadProgressText = document.getElementById("upload-text");
+        const upt2 = document.getElementById("upload-text2");
+
+        uploadProgressBar.style.width = `0%`;
+        uploadProgressText.textContent = `Discovering ${foundfiles} Files`;
+        const totalMB = ALLfilessize / (1024 * 1024);
+        upt2.textContent = `0.00 MB`;
+        
+        async function readsizes(folderID) {
+            let uploadsObject = await getasync("u", folderID)
+            if (!uploadsObject) {
+                uploadsObject = {}
+            } else {
+                uploadsObject = JSON.parse(uploadsObject)
+            }
+            console.log(uploadsObject)
+
+            for (const i in uploadsObject) {
+                console.log(i)
+                const data = uploadsObject[i]
+                console.log(data)
+                if (data[1] != "folder") {
+                    ALLfilessize += data[3]
+                    foundfiles += 1
+
+                    uploadProgressBar.style.width = `0%`;
+                    uploadProgressText.textContent = `Discovering ${foundfiles} Files`;
+                    const totalMB = ALLfilessize / (1024 * 1024);
+                    upt2.textContent = `${totalMB.toFixed(2)} MB`;
+
+                } else {
+                    await readsizes(data[0])
+                }
+            }
+        }
+
+        await readsizes(filelink[0])
+        console.log(ALLfilessize, foundfiles)
+
+        let alreadydownloaded = 0
+
+        async function dlfollol(folderID, mainfolder) {
 
             let uploadsObject = await getasync("u", folderID)
             if (!uploadsObject) {
@@ -1191,24 +1217,33 @@ async function createitems(uploadsObject, dva) {
                     nonFolderCount++;
                 }
             }
-
+            
             for (const i in uploadsObject) {
                 on += 1
                 console.log(i)
                 const data = uploadsObject[i]
                 console.log(data)
                 if (data[1] != "folder") {
-                    const blob = await downloadfile(i, data[1], data[2], data[3], on, nonFolderCount, true)
+                    const progress = ((alreadydownloaded) / ALLfilessize) * 100;
+
+                    uploadProgressBar.style.width = `${progress}%`;
+                    uploadProgressText.textContent = `Downloading Folder ${filename}... 0%`;
+                    const totalMB = ALLfilessize / (1024 * 1024);
+                    const totaldled = alreadydownloaded / (1024 * 1024);
+                    upt2.textContent = `${totaldled.toFixed(2)} MB / ${totalMB.toFixed(2)} MB`;
+
+                    const blob = await downloadfile(i, data[1], data[2], data[3], true, alreadydownloaded, ALLfilessize, `Folder ${filename}`)
                     console.log(blob)
+                    alreadydownloaded += blob.size
                     mainfolder.file(i, blob);
                 } else {
                     const myFolder = mainfolder.folder(i);
-                    await dlfollol(folderID, data[0], myFolder)
+                    await dlfollol(data[0], myFolder)
                 }
             }
         }
 
-        await dlfollol(dvvv, filelink[0], zip)
+        await dlfollol(filelink[0], zip)
 
  
 
@@ -1222,6 +1257,8 @@ async function createitems(uploadsObject, dva) {
             downloadLink.download = filename+'.zip'; // Replace 'myZip.zip' with desired filename
             downloadLink.textContent = `Download ready!: ${downloadLink.download}`;
             downloadLink.click();
+
+            moddingfiles = false
         });
 
     });
@@ -1258,7 +1295,7 @@ async function createitems(uploadsObject, dva) {
         const img = document.createElement("img");
         let imgsrc = ""
         try {
-            const imgblob = await fetchcachedblob(filelink[1])
+            const imgblob = await fetchcachedblob(filelink[4])
             imgsrc = URL.createObjectURL(imgblob);
         } catch(err) {
             imgsrc = ""
@@ -1442,7 +1479,7 @@ async function createitems(uploadsObject, dva) {
               }
               
 
-              Binobjects[filename] = uploadsObject[filename]
+              Binobjects[filename + " " + generateUUID()] = uploadsObject[filename]
               delete uploadsObject[filename]
               await setasync("u", "Bin", JSON.stringify(Binobjects))
               await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
@@ -1460,7 +1497,32 @@ async function createitems(uploadsObject, dva) {
 
         downloadbtn.addEventListener("click", async function(event) {
             event.stopPropagation();
-            downloadfile(filename, filelink[1], filelink[2], filelink[3], 1, 1)
+
+            if (moddingfiles) {
+                return alert("Another process is running. please wait");
+            }
+            
+            moddingfiles = true
+
+            const alreadydownloaded = 0
+            const filesize = filelink[3]
+
+            const uploadProgressPopup = document.getElementById("upload-progress-popup");
+            uploadProgressPopup.style.display = "block";
+          
+            const uploadProgressBar = document.getElementById("upload-progress");
+            const uploadProgressText = document.getElementById("upload-text");
+            const upt2 = document.getElementById("upload-text2");
+
+            uploadProgressBar.style.width = `0%`;
+            uploadProgressText.textContent = `Downloading ${filename}... 0%`;
+            const totalMB = filesize / (1024 * 1024);
+            upt2.textContent = `0 MB / ${totalMB.toFixed(2)} MB`;
+          
+          
+            await downloadfile(filename, filelink[1], filelink[2], filelink[3], false, alreadydownloaded, filesize, filename)
+
+            moddingfiles = false
 
         });
 
@@ -1675,7 +1737,7 @@ function decryptData(encryptedData, binary) {
 
 
 
-let prefix = "faei0hf"
+let prefix = "111111111111"
 
 async function getasync(name, key, binary) {
   while (true) {
@@ -1796,11 +1858,11 @@ async function cacheblobs() {
                 } else {
                     const thumbloc = uploadsObject[i][4]
                     if (thumbloc != "") {
-                        const a = await blobExists(uploadsObject[i][1])
+                        const a = await blobExists(thumbloc)
                         if (!a) {
-                            console.log(uploadsObject[i])
+                            console.log(thumbloc)
                             const fileasblob = await getfileasBLOB(thumbloc, 1)
-                            await setCachedBlob(uploadsObject[i][1], fileasblob)
+                            await setCachedBlob(thumbloc, fileasblob)
                         }
     
                     }
@@ -1812,7 +1874,7 @@ async function cacheblobs() {
             }
         }
     
-        if (!downloading && !upload) {
+        if (!moddingfiles) {
             await checkforimages("root")
         }
 
