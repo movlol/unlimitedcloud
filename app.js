@@ -1013,7 +1013,6 @@ function getFileExtension(fileName) {
     return ""; // If no extension found
 }
 
-let deleting = false
 
 async function createitems(uploadsObject, dva) {
   if (dValue != dva) {
@@ -1105,13 +1104,14 @@ async function createitems(uploadsObject, dva) {
       delbutton.addEventListener("click", async function(event) {
         event.stopPropagation();
 
-        if (deleting) {
-            return alert("Please wait for the previous delete")
-        }
         
+        if (moddingfiles) {
+            return alert("Another process is running. please wait");
+        }
+    
        
           if (confirm(`Would you like to move folder ${filename} to the bin`)) {
-            deleting = true
+            moddingfiles = true
               let uploadsObject = await getasync("u", dValue.split("/").pop())
               if (!uploadsObject) {
                   uploadsObject = {}
@@ -1126,12 +1126,12 @@ async function createitems(uploadsObject, dva) {
                 Binobjects = JSON.parse(Binobjects)
               }
 
-              Binobjects[filename + " " + generateUUID()] = uploadsObject[filename]
+              Binobjects[generateUUID() + filename] = uploadsObject[filename]
               delete uploadsObject[filename]
               await setasync("u", "Bin", JSON.stringify(Binobjects))
               await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
+              moddingfiles = false
               loaduploads()
-              deleting = false
           }
       });
 
@@ -1457,13 +1457,13 @@ async function createitems(uploadsObject, dva) {
 
       delbutton.addEventListener("click", async function(event) {
         event.stopPropagation();
-        if (deleting) {
-            return alert("Please wait for the previous delete")
-        }
-    
-          if (confirm(`Would you like to move file ${filename} to the bin`)) {
-            deleting = true
 
+        if (moddingfiles) {
+            return alert("Another process is running. please wait");
+        }
+
+          if (confirm(`Would you like to move file ${filename} to the bin`)) {
+            moddingfiles = true
               let uploadsObject = await getasync("u", dValue.split("/").pop())
               if (!uploadsObject) {
                   uploadsObject = {}
@@ -1479,13 +1479,13 @@ async function createitems(uploadsObject, dva) {
               }
               
 
-              Binobjects[filename + " " + generateUUID()] = uploadsObject[filename]
+              Binobjects[generateUUID() + filename] = uploadsObject[filename]
               delete uploadsObject[filename]
               await setasync("u", "Bin", JSON.stringify(Binobjects))
               await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
+              moddingfiles = false
               loaduploads()
-              deleting = false
-
+   
           }
       });
 
@@ -1737,7 +1737,7 @@ function decryptData(encryptedData, binary) {
 
 
 
-let prefix = "111111111111"
+let prefix = "skibidi"
 
 async function getasync(name, key, binary) {
   while (true) {
