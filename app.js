@@ -638,8 +638,6 @@ async function trymakethumbnail(file) {
     return thumbnailchunkid
 }
 
-
-
 async function handleFileSelection(event) {
   const allfiles = event.target.files.length;
 
@@ -686,6 +684,7 @@ moddingfiles = true
     for (const file of (event.target.files)) {
         let n = file.name
         if (uploadsObject[n]) {
+            moddingfiles = false
             return alert(`There is already a file with the same name ${n}`)
         }
     
@@ -737,10 +736,6 @@ async function handleFolderSelection(event) {
     }
     let folderid = generateUUID()
 
-    if (uploadsObject[foldername]) {
-        return alert(`There is already a folder with the same name ${foldername}`)
-    }
-
     const uploadProgressPopup = document.getElementById("upload-progress-popup");
     uploadProgressPopup.style.display = "block";
 
@@ -755,12 +750,14 @@ async function handleFolderSelection(event) {
     upt2.innerHTML = `0 MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB <br>${formatTime(combinedsize / bytesPerSecond)}`;
     document.title = `0%`;
 
+    if (uploadsObject[foldername]) {
+        folderid = uploadsObject[foldername][0]
+    } else {
+        uploadsObject[foldername] = [folderid, "folder"]
+        await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject))
+        loaduploads()
+    }
 
-    uploadsObject[foldername] = [folderid, "folder"]
-
-
-    await setasync("u", dvvv.split("/").pop(), JSON.stringify(uploadsObject))
-    loaduploads()
 
     const orid = dvvv+"/"+folderid
 
@@ -804,9 +801,22 @@ async function handleFolderSelection(event) {
         console.log(deep)
   
 
-        const thumbnailchunkid = await trymakethumbnail(file)
-        console.log(thumbnailchunkid)
-        await setfile(file, i, allfiles, deep.split("/").pop(), thumbnailchunkid, combinedsize, uploaded, `Folder ${foldername}`);
+        let uploadsObject = await getasync("u", deep.split("/").pop())
+        if (!uploadsObject) {
+            uploadsObject = {}
+        } else {
+            uploadsObject = JSON.parse(uploadsObject)
+        }
+
+        if (!uploadsObject[file.name]) {
+            const thumbnailchunkid = await trymakethumbnail(file)
+            console.log(thumbnailchunkid)
+            await setfile(file, i, allfiles, deep.split("/").pop(), thumbnailchunkid, combinedsize, uploaded, `Folder ${foldername}`);
+        } else {
+            console.log("resuming...")
+        }
+
+
         uploaded += file.size
   
     };
