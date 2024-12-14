@@ -52,6 +52,22 @@ function logout() {
 
 }
 
+function formatTime(seconds) {
+    const days = Math.floor(seconds / (24 * 3600));
+    const hours = Math.floor((seconds % (24 * 3600)) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    // Build the formatted string
+    let result = [];
+    if (days > 0) result.push(`${days} days`);
+    if (hours > 0) result.push(`${hours} hours`);
+    if (minutes > 0) result.push(`${minutes} minutes`);
+    if (secs > 0 || result.length === 0) result.push(`${secs} seconds`); // Always show seconds if no other unit
+
+    return result.join(", ") + " remaining";
+}
+
 function generatekey() {
     const array = new Uint8Array(32);
     window.crypto.getRandomValues(array);
@@ -315,6 +331,13 @@ function generateFileKey() { //key no-one could guess
 }
 
 
+const bytesPerMinute = 10 * 1024 * 1024; // 10 MB in bytes
+const base64OverheadFactor = 4 / 3; // Base64 increases size by 4/3
+const effectiveBytesPerMinute = bytesPerMinute / base64OverheadFactor; // Adjust for Base64
+const bytesPerSecond = effectiveBytesPerMinute / 60; // Convert to bytes per second
+const BYTESPERDOWNLOAD = bytesPerSecond*2
+
+
 async function setfile(file, number, max, dvvv, thumbnailchunkid, allfilessize, bytesuploadedallfiles, filenameV) {
     return new Promise((resolve, reject) => {
         const uploadProgressBar = document.getElementById("upload-progress");
@@ -331,9 +354,13 @@ async function setfile(file, number, max, dvvv, thumbnailchunkid, allfilessize, 
   
         const progress = (bytesuploadedallfiles / allfilessize) * 100;
 
+        const bytesleft = allfilessize-bytesuploadedallfiles
+        const timeRemainingSeconds = bytesleft / bytesPerSecond;
+
+    
         uploadProgressBar.style.width = `${progress.toFixed(2)}%`;
         uploadProgressText.textContent = `Uploading ${filenameV}... ${progress.toFixed(2)}%`;
-        upt2.textContent = `${(bytesuploadedallfiles / (1024 * 1024)).toFixed(2)} MB / ${(allfilessize / (1024 * 1024)).toFixed(2)} MB`;
+        upt2.innerHTML = `${(bytesuploadedallfiles / (1024 * 1024)).toFixed(2)} MB / ${(allfilessize / (1024 * 1024)).toFixed(2)} MB<br>${formatTime(timeRemainingSeconds)}`;
         document.title = `${progress.toFixed(2)}%`;
 
         let uploadedMB = 0
@@ -359,12 +386,15 @@ async function setfile(file, number, max, dvvv, thumbnailchunkid, allfilessize, 
                         await sendChunk(chunkData, THISCHUNK);
                         uploadedMB += chunkData.byteLength
 
+                        const bytesleft = allfilessize-(bytesuploadedallfiles+uploadedMB)
+                        const timeRemainingSeconds = bytesleft / bytesPerSecond;
+
                         const progress = ((bytesuploadedallfiles+uploadedMB) / allfilessize) * 100;
   
                         // Display progress and speed
                         uploadProgressBar.style.width = `${progress}%`;
                         uploadProgressText.textContent = `Uploading ${filenameV}... ${progress.toFixed(2)}%`;
-                        upt2.textContent = `${((bytesuploadedallfiles+uploadedMB) / (1024 * 1024)).toFixed(2)} MB / ${(allfilessize / (1024 * 1024)).toFixed(2)} MB`;
+                        upt2.innerHTML = `${((bytesuploadedallfiles+uploadedMB) / (1024 * 1024)).toFixed(2)} MB / ${(allfilessize / (1024 * 1024)).toFixed(2)} MB<br>${formatTime(timeRemainingSeconds)}`;
                         document.title = `${progress.toFixed(2)}%`;
   
                         resolve();
@@ -641,12 +671,10 @@ moddingfiles = true
     
     const uploadProgressPopup = document.getElementById("upload-progress-popup");
     uploadProgressPopup.style.display = "block";
-
-
-  uploadProgressBar.style.width = `0%`;
-  uploadProgressText.textContent = `Uploading ${filenameV}... 0%`;
-  upt2.textContent = `0 MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB\n`;
-  document.title = `0%`;
+    uploadProgressBar.style.width = `0%`;
+    uploadProgressText.textContent = `Uploading ${filenameV}... 0%`;
+    upt2.innerHTML = `0 MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB<br>${formatTime(combinedsize / bytesPerSecond)}`;
+    document.title = `0%`;
 
 
     let uploadsObject = await getasync("u", dvvv.split("/").pop())
@@ -674,7 +702,7 @@ moddingfiles = true
   };
 
   uploadProgressText.textContent = ``;
-  upt2.textContent = ``;
+  upt2.innerHTML = ``;
   uploadProgressPopup.style.display = "none";
 
   document.title = `Unlimited - Cloud Storage`;
@@ -724,7 +752,7 @@ async function handleFolderSelection(event) {
 
     uploadProgressBar.style.width = `0%`;
     uploadProgressText.textContent = `Uploading Folder ${foldername}... 0%`;
-    upt2.textContent = `0 MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB\n`;
+    upt2.innerHTML = `0 MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB <br>${formatTime(combinedsize / bytesPerSecond)}`;
     document.title = `0%`;
 
 
@@ -786,7 +814,7 @@ async function handleFolderSelection(event) {
 
 
     uploadProgressText.textContent = ``;
-    upt2.textContent = ``;
+    upt2.innerHTML = ``;
     uploadProgressPopup.style.display = "none";
   
     document.title = `Unlimited - Cloud Storage`;
@@ -825,8 +853,10 @@ async function downloadfile(filename, chunkid, totalchunks, filesize, returnasbl
         on += 1
         downloadedMB += chunk.size
     
+        const bytesleft = allfilessize-(downloadedMB+alreadydownloaded)
+        const timeRemainingSeconds = bytesleft / BYTESPERDOWNLOAD;
 
-        upt2.textContent = `${((downloadedMB+alreadydownloaded) / (1024 * 1024)).toFixed(2)} MB / ${((allfilessize) / (1024 * 1024)).toFixed(2)} MB`;
+        upt2.innerHTML = `${((downloadedMB+alreadydownloaded) / (1024 * 1024)).toFixed(2)} MB / ${((allfilessize) / (1024 * 1024)).toFixed(2)} MB<br>${formatTime(timeRemainingSeconds)}`;
 
         const progress = ((downloadedMB+alreadydownloaded) / allfilessize) * 100;
         uploadProgressBar.style.width = `${progress}%`;
@@ -1163,7 +1193,7 @@ async function createitems(uploadsObject, dva) {
         uploadProgressBar.style.width = `0%`;
         uploadProgressText.textContent = `Discovering ${foundfiles} Files`;
         const totalMB = ALLfilessize / (1024 * 1024);
-        upt2.textContent = `0.00 MB`;
+        upt2.innerHTML = `0.00 MB`;
         
         async function readsizes(folderID) {
             let uploadsObject = await getasync("u", folderID)
@@ -1185,7 +1215,7 @@ async function createitems(uploadsObject, dva) {
                     uploadProgressBar.style.width = `0%`;
                     uploadProgressText.textContent = `Discovering ${foundfiles} Files`;
                     const totalMB = ALLfilessize / (1024 * 1024);
-                    upt2.textContent = `${totalMB.toFixed(2)} MB`;
+                    upt2.innerHTML = `${totalMB.toFixed(2)} MB`;
 
                 } else {
                     await readsizes(data[0])
@@ -1226,11 +1256,16 @@ async function createitems(uploadsObject, dva) {
                 if (data[1] != "folder") {
                     const progress = ((alreadydownloaded) / ALLfilessize) * 100;
 
+                    const bytesleft = ALLfilessize-(alreadydownloaded)
+                    const timeRemainingSeconds = bytesleft / BYTESPERDOWNLOAD;
+            
+
                     uploadProgressBar.style.width = `${progress}%`;
                     uploadProgressText.textContent = `Downloading Folder ${filename}... 0%`;
                     const totalMB = ALLfilessize / (1024 * 1024);
                     const totaldled = alreadydownloaded / (1024 * 1024);
-                    upt2.textContent = `${totaldled.toFixed(2)} MB / ${totalMB.toFixed(2)} MB`;
+
+                    upt2.innerHTML = `${totaldled.toFixed(2)} MB / ${totalMB.toFixed(2)} MB<br>${formatTime(timeRemainingSeconds)}`;
 
                     const blob = await downloadfile(i, data[1], data[2], data[3], true, alreadydownloaded, ALLfilessize, `Folder ${filename}`)
                     console.log(blob)
@@ -1513,11 +1548,14 @@ async function createitems(uploadsObject, dva) {
             const uploadProgressBar = document.getElementById("upload-progress");
             const uploadProgressText = document.getElementById("upload-text");
             const upt2 = document.getElementById("upload-text2");
+            
+            const bytesleft = filesize-(alreadydownloaded)
+            const timeRemainingSeconds = bytesleft / BYTESPERDOWNLOAD;
 
             uploadProgressBar.style.width = `0%`;
             uploadProgressText.textContent = `Downloading ${filename}... 0%`;
             const totalMB = filesize / (1024 * 1024);
-            upt2.textContent = `0 MB / ${totalMB.toFixed(2)} MB`;
+            upt2.innerHTML = `0 MB / ${totalMB.toFixed(2)} MB<br>${formatTime(timeRemainingSeconds)}`;
           
           
             await downloadfile(filename, filelink[1], filelink[2], filelink[3], false, alreadydownloaded, filesize, filename)
@@ -1748,37 +1786,38 @@ async function getasync(name, key, binary) {
               },
           });
 
-          // Retry on specific HTTP status codes
-          if (a.status === 429 || a.status === 500) {
-              await delay(5000); // Wait for 5 seconds before retrying
-              continue;
-          }
-
           // If 404 status, return undefined
           if (a.status === 404) {
               return undefined;
           }
 
-          const t = await a.json();
+          if (a.status === 200) {
+            const t = await a.json();
 
-          if (binary) {
-              // Base64 decode to binary and return as Blob
-              const binaryString = atob(t); // Base64 decode the string
-
-              const byteArray = new Uint8Array(binaryString.length);
-
-              for (let i = 0; i < binaryString.length; i++) {
-                  byteArray[i] = binaryString.charCodeAt(i);
-              }
-
-              const fixed = decryptData(byteArray, true)
-
-              const blob = new Blob([fixed]); // Convert the byte array to a Blob
-              return blob;
+            if (binary) {
+                // Base64 decode to binary and return as Blob
+                const binaryString = atob(t); // Base64 decode the string
+  
+                const byteArray = new Uint8Array(binaryString.length);
+  
+                for (let i = 0; i < binaryString.length; i++) {
+                    byteArray[i] = binaryString.charCodeAt(i);
+                }
+  
+                const fixed = decryptData(byteArray, true)
+  
+                const blob = new Blob([fixed]); // Convert the byte array to a Blob
+                return blob;
+            } else {
+                return decryptData(atob(t))
+            }
           } else {
-
-              return decryptData(atob(t))
+            await delay(5000); // Wait for 5 seconds before retrying
+            continue;
           }
+
+
+
       } catch (error) {
           console.error("Network error:", error);
           await delay(5000); // Wait for 5 seconds before retrying on network errors
@@ -1827,14 +1866,14 @@ async function setasync(name, key, data) {
               method: "POST",
           });
 
-          // Retry on specific HTTP status codes
-          if (a.status === 429 || a.status === 500) {
-              await delay(5000); // Wait for 5 seconds before retrying
-              continue;
+          if (a.status == 200) {
+            const t = await a.json();
+            break; // Exit loop if the request succeeds
+          } else {
+            await delay(5000); // Wait for 5 seconds before retrying
+            continue;
           }
-
-          const t = await a.json();
-          break; // Exit loop if the request succeeds
+      
       } catch (error) {
           console.error("Network error:", error);
           await delay(5000); // Wait for 5 seconds before retrying on network errors
