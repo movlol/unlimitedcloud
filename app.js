@@ -814,6 +814,17 @@ async function handleFolderSelection(event) {
             await setfile(file, i, allfiles, deep.split("/").pop(), thumbnailchunkid, combinedsize, uploaded, `Folder ${foldername}`);
         } else {
             console.log("resuming...")
+
+            const progress = (uploaded / combinedsize) * 100;
+
+            const bytesleft = combinedsize-uploaded
+            const timeRemainingSeconds = bytesleft / bytesPerSecond;
+
+
+            uploadProgressBar.style.width = `${progress.toFixed(2)}%`;
+            uploadProgressText.textContent = `Uploading Folder ${foldername}... ${progress.toFixed(2)}%`;
+            upt2.innerHTML = `${(uploaded / (1024 * 1024)).toFixed(2)} MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB<br>${formatTime(timeRemainingSeconds)}`;
+            document.title = `${progress.toFixed(2)}%`;
         }
 
 
