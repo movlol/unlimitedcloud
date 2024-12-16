@@ -9,16 +9,22 @@ const supportedVideoExtensions = [
     'mp4', 'mkv', 'mov', 'avi', 'flv', 'wmv', 'webm', 'mpeg', '3gp', 'ogg'
 ];
 
+const supportedAudioExtensions = [
+    'mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'wma', 'alac', 'aiff'
+];
+
 function isSupportedByFFmpeg(ext) {
     if (supportedImageExtensions.includes(ext)) {
-      return 'image';
+        return 'image';
     }
     if (supportedVideoExtensions.includes(ext)) {
-      return 'video';
+        return 'video';
+    }
+    if (supportedAudioExtensions.includes(ext)) {
+        return 'audio';
     }
     return null;
-  }
-
+}
 
 function getlogin() {
   let f = getcurrentpasskey();
@@ -135,99 +141,135 @@ var dValue = "root"
 var dValueLook = "root"
 
 var emoji = {
-  "txt": "📄",
-  "doc": "📃",
-  "docx": "📑",
-  "pdf": "📰",
-  "ppt": "📊",
-  "pptx": "📈",
-  "xls": "📉",
-  "xlsx": "📊",
-  "csv": "📊",
-  "jpg": "🖼️",
-  "png": "🖼️",
-  "webp": "🖼️",
-  "gif": "🖼️",
-  "mp3": "🎵",
-  "wav": "🎵",
-  "mp4": "🎥",
-  "mov": "🎥",
-  "avi": "🎥",
-  "ts": "🎥",
-  "mpeg": "🎥",
-  "zip": "📦",
-  "rar": "📦",
-  "exe": "💻",
-  "html": "🌐",
-  "css": "🎨",
-  "js": "📜",
-  "json": "📄",
-  "xml": "🧾",
-  "cpp": "💻",
-  "java": "☕",
-  "py": "🐍",
-  "rb": "💎",
-  "php": "🐘",
-  "md": "📝",
-  "key": "🔑",
-  "sql": "🗃️",
-  "bak": "🗑️",
-  "conf": "⚙️",
-  "log": "📋",
-  "cfg": "⚙️",
-  "dll": "🔌",
-  "jar": "🍶",
-  "ttf": "🔤",
-  "otf": "🔤",
-  "psd": "🎨",
-  "svg": "🎨",
-  "tmp": "❄️",
-  "iso": "💿",
-  "backup": "🗄️",
-  "bat": "🦇",
-  "sh": "🐚",
-  "h": "💻",
-  "hpp": "💻",
-  "class": "📦",
-  "obj": "🧱",
-  "swift": "🐦",
-  "kt": "🐱",
-  "cs": "💻",
-  "vb": "💻",
-  "rtf": "📄",
-  "ps1": "📜",
-  "patch": "🩹",
-  "cxx": "💻",
-  "hxx": "💻",
-  "war": "⚔️",
-  "ear": "👂",
-  "pyc": "🐍",
-  "pyo": "🐍",
-  "whl": "🔧",
-  "swp": "🔄",
-  "csproj": "📦",
-  "suo": "🔒",
-  "pdb": "🔒",
-  "dsp": "🔊",
-  "vbp": "🔌",
-  "vbw": "🔌",
-  "mak": "🛠️",
-  "ini": "⚙️",
-  "asd": "🗑️",
-  "torrent": "🌊",
-  "vmx": "🖥️",
-  "vmdk": "💽",
-  "vagrant": "🧙",
-  "img": "🖼️",
-  "bin": "🗑️",
-  "cue": "🎮",
-  "ova": "🥚",
-  "tar": "🗃️",
-  "gz": "🗃️",
-  "xz": "🗃️",
-  "bz2": "🗃️",
-  "apk": "📱",
-};
+    "txt": "📄",
+    "doc": "📃",
+    "docx": "📑",
+    "pdf": "📰",
+    "ppt": "📊",
+    "pptx": "📈",
+    "xls": "📉",
+    "xlsx": "📊",
+    "csv": "📊",
+    "jpg": "🖼️",
+    "png": "🖼️",
+    "webp": "🖼️",
+    "gif": "🖼️",
+    "mp3": "🎵",
+    "wav": "🎵",
+    "flac": "🎵",
+    "ogg": "🎵",
+    "mp4": "🎥",
+    "mov": "🎥",
+    "avi": "🎥",
+    "ts": "🎥",
+    "mpeg": "🎥",
+    "webm": "🎥",
+    "mkv": "🎥",
+    "zip": "📦",
+    "rar": "📦",
+    "7z": "📦",
+    "xz": "📦",
+    "lzma": "📦",
+    "tar": "🗃️",
+    "gz": "🗃️",
+    "bz2": "🗃️",
+    "iso": "💿",
+    "dmg": "💿",
+    "qcow2": "💿",
+    "exe": "💻",
+    "html": "🌐",
+    "css": "🎨",
+    "js": "📜",
+    "json": "📄",
+    "xml": "🧾",
+    "yaml": "🧾",
+    "yml": "🧾",
+    "ts": "📜",
+    "tsx": "📜",
+    "scss": "🎨",
+    "sass": "🎨",
+    "less": "🎨",
+    "go": "🐹",
+    "rs": "🦀",
+    "asm": "💻",
+    "vue": "🌄",
+    "jsx": "📜",
+    "cpp": "💻",
+    "java": "☕",
+    "py": "🐍",
+    "rb": "💎",
+    "php": "🐘",
+    "md": "📝",
+    "key": "🔑",
+    "sql": "🗃️",
+    "bak": "🗑️",
+    "conf": "⚙️",
+    "log": "📋",
+    "cfg": "⚙️",
+    "dll": "🔌",
+    "jar": "🍶",
+    "ttf": "🔤",
+    "otf": "🔤",
+    "woff": "🔤",
+    "woff2": "🔤",
+    "eot": "🔤",
+    "psd": "🎨",
+    "svg": "🎨",
+    "tmp": "❄️",
+    "backup": "🗄️",
+    "bat": "🦇",
+    "sh": "🐚",
+    "h": "💻",
+    "hpp": "💻",
+    "class": "📦",
+    "obj": "🧱",
+    "swift": "🐦",
+    "kt": "🐱",
+    "cs": "💻",
+    "vb": "💻",
+    "rtf": "📄",
+    "ps1": "📜",
+    "patch": "🩹",
+    "cxx": "💻",
+    "hxx": "💻",
+    "war": "⚔️",
+    "ear": "👂",
+    "pyc": "🐍",
+    "pyo": "🐍",
+    "whl": "🔧",
+    "swp": "🔄",
+    "csproj": "📦",
+    "suo": "🔒",
+    "pdb": "🔒",
+    "dsp": "🔊",
+    "vbp": "🔌",
+    "vbw": "🔌",
+    "mak": "🛠️",
+    "ini": "⚙️",
+    "asd": "🗑️",
+    "torrent": "🌊",
+    "vmx": "🖥️",
+    "vmdk": "💽",
+    "vagrant": "🧙",
+    "img": "🖼️",
+    "bin": "🗑️",
+    "cue": "🎮",
+    "ova": "🥚",
+    "db": "🗃️",
+    "sqlite": "🗃️",
+    "mdb": "🗃️",
+    "apk": "📱",
+    "nfo": "💾",
+    "yaml": "🧾",
+    "plist": "⚙️",
+    "reg": "🗃️",
+    "crt": "🔒",
+    "pem": "🔒",
+    "key": "🔑",
+    "ics": "📅",
+    "msg": "✉️",
+    "eml": "✉️"
+}  
 
 
 
@@ -558,6 +600,10 @@ async function trymakethumbnail(file) {
         const ext = getFileExtension(file.name);
         const works = isSupportedByFFmpeg(ext)
         console.log(works)
+
+        if (works == "audio") {
+            return thumbnailchunkid
+        }
         
         if (works) {
 
@@ -1064,6 +1110,43 @@ function getFileExtension(fileName) {
     return ""; // If no extension found
 }
 
+let loadedscripts = {}
+
+function createscript(URL) {
+    return new Promise((resolve, reject) => {
+        if (loadedscripts[URL]) {
+            resolve(true);
+            return;
+        }
+
+        const s = document.createElement("script");
+        s.src = URL;
+        document.head.appendChild(s);
+
+        s.onload = function() {
+            loadedscripts[URL] = true;
+            resolve(true);
+        };
+
+        s.onerror = function() {
+            reject(new Error(`Failed to load script: ${URL}`));
+        };
+    });
+}
+
+function formatSize(bytes) {
+    if (bytes < 1024) {
+        return bytes + " Bytes";
+    } else if (bytes < 1048576) {
+        return (bytes / 1024).toFixed(2) + " KB";
+    } else if (bytes < 1073741824) {
+        return (bytes / 1048576).toFixed(2) + " MB";
+    } else if (bytes < 1099511627776) {
+        return (bytes / 1073741824).toFixed(2) + " GB";
+    } else {
+        return (bytes / 1099511627776).toFixed(2) + " TB";
+    }
+}
 
 async function createitems(uploadsObject, dva) {
   if (dValue != dva) {
@@ -1333,6 +1416,10 @@ async function createitems(uploadsObject, dva) {
   });
 
 
+
+
+
+
   // Create and append file entries
   files.forEach( async ([filename, filelink]) => {
       const link = document.createElement("a");
@@ -1378,80 +1465,206 @@ async function createitems(uploadsObject, dva) {
 
       link.addEventListener("click", async function(event) {
         event.preventDefault();
+
+        if (moddingfiles) {
+            return alert("Another process is running. please wait");
+        }
+
         const works = isSupportedByFFmpeg(fileExtension)
         console.log(works)
-        if (!works) {
-            return alert("Sorry you can not preview this file however you can download it")
-        }
-
-        if (works == "image") {
-            document.getElementById("filelol").style.display = "";
-            window.streamingfile = true;
-            const img = document.createElement("img");
-            img.classList.add("fileprev");
-            document.getElementById("filespot").innerHTML = "";
-            document.getElementById("filespot").appendChild(img);
-            const l = document.createElement("p");
-            l.textContent = "Loading Image...";
-            document.getElementById("filespot").appendChild(l);
-            const totalchunks = filelink[2];
-            const chunkid = filelink[1];
-            const filesize = filelink[3];
-            let loadedSize = 0;
-            let chunks = [];
-
-            // Function to fetch chunks concurrently in batches
-            const fetchChunksInBatches = async () => {
-                const batchSize = 50; // Number of concurrent requests per batch
-                let currentChunk = 0;
-            
-                while (currentChunk < totalchunks && window.streamingfile) {
-                    const batchPromises = [];
-                    // Create promises for the current batch of chunks
-                    for (let i = currentChunk; i < Math.min(currentChunk + batchSize, totalchunks); i++) {
-                        batchPromises.push(
-                            getasync(chunkid, i.toString(), true).then(chunk => {
-                                // Ensure each chunk is placed at the correct index
-                                chunks[i] = chunk;
-                                loadedSize += chunk.size;
-            
-                                // Update progress after each chunk is fetched
-                                const loadedMB = (loadedSize / (1024 * 1024)).toFixed(2); // Loaded size in MB
-                                const totalMB = (filesize / (1024 * 1024)).toFixed(2); // Total file size in MB
-                                const progress = ((loadedSize / filesize) * 100).toFixed(2); // Percentage progress
-                                l.textContent = `${loadedMB} MB / ${totalMB} MB (${progress}%)`;
-                            })
-                        );
+        
+        if (works) {
+            if (works == "image") {
+                document.getElementById("filelol").style.display = "";
+                window.streamingfile = true;
+                const img = document.createElement("img");
+                img.classList.add("fileprev");
+                document.getElementById("filespot").innerHTML = "";
+                document.getElementById("filespot").appendChild(img);
+                const l = document.createElement("p");
+                l.textContent = "Loading Image...";
+                document.getElementById("filespot").appendChild(l);
+                const totalchunks = filelink[2];
+                const chunkid = filelink[1];
+                const filesize = filelink[3];
+                let loadedSize = 0;
+                let chunks = [];
+    
+                // Function to fetch chunks concurrently in batches
+                const fetchChunksInBatches = async () => {
+                    const batchSize = 50; // Number of concurrent requests per batch
+                    let currentChunk = 0;
+                
+                    while (currentChunk < totalchunks && window.streamingfile) {
+                        const batchPromises = [];
+                        // Create promises for the current batch of chunks
+                        for (let i = currentChunk; i < Math.min(currentChunk + batchSize, totalchunks); i++) {
+                            batchPromises.push(
+                                getasync(chunkid, i.toString(), true).then(chunk => {
+                                    // Ensure each chunk is placed at the correct index
+                                    chunks[i] = chunk;
+                                    loadedSize += chunk.size;
+                
+                                    // Update progress after each chunk is fetched
+                                    const loadedMB = (loadedSize / (1024 * 1024)).toFixed(2); // Loaded size in MB
+                                    const totalMB = (filesize / (1024 * 1024)).toFixed(2); // Total file size in MB
+                                    const progress = ((loadedSize / filesize) * 100).toFixed(2); // Percentage progress
+                                    l.textContent = `${loadedMB} MB / ${totalMB} MB (${progress}%)`;
+                                })
+                            );
+                        }
+                
+                        // Wait for all promises in the batch to resolve
+                        await Promise.all(batchPromises);
+                
+                        currentChunk += batchSize;
                     }
-            
-                    // Wait for all promises in the batch to resolve
-                    await Promise.all(batchPromises);
-            
-                    currentChunk += batchSize;
-                }
-            
-                // Once all chunks are loaded, combine them into a blob and update the image
-                const blob = new Blob(chunks, { type: 'application/octet-stream' });
-                const imgUrl = URL.createObjectURL(blob);
-                img.src = imgUrl;
-            
-                l.remove(); // Remove the "Connecting..." text once all chunks are loaded
-            };
-            
-            // Start the batch fetching
-            fetchChunksInBatches();
-            
+                
+                    // Once all chunks are loaded, combine them into a blob and update the image
+                    const blob = new Blob(chunks, { type: 'application/octet-stream' });
+                    const imgUrl = URL.createObjectURL(blob);
+                    img.src = imgUrl;
+                
+                    l.remove(); // Remove the "Connecting..." text once all chunks are loaded
+                };
+                
+                // Start the batch fetching
+                fetchChunksInBatches();
+                
+    
+            } else if (works == "video") {
+                document.getElementById("filelol").style.display = "";
+                window.streamingfile = true;
+                const img = document.createElement("video");
+                img.classList.add("fileprev");
+                img.controls = true
+                document.getElementById("filespot").innerHTML = "";
+                document.getElementById("filespot").appendChild(img);
+                const l = document.createElement("p");
+                l.textContent = "Loading Video...";
+                document.getElementById("filespot").appendChild(l);
+                const totalchunks = filelink[2];
+                const chunkid = filelink[1];
+                const filesize = filelink[3];
+                let loadedSize = 0;
+                let chunks = [];
+    
+                // Function to fetch chunks concurrently in batches
+                const fetchChunksInBatches = async () => {
+                    const batchSize = 50; // Number of concurrent requests per batch
+                    let currentChunk = 0;
+                
+                    while (currentChunk < totalchunks && window.streamingfile) {
+                        const batchPromises = [];
+                        // Create promises for the current batch of chunks
+                        for (let i = currentChunk; i < Math.min(currentChunk + batchSize, totalchunks); i++) {
+                            batchPromises.push(
+                                getasync(chunkid, i.toString(), true).then(chunk => {
+                                    // Ensure each chunk is placed at the correct index
+                                    chunks[i] = chunk;
+                                    loadedSize += chunk.size;
+                
+                                    // Update progress after each chunk is fetched
+                                    const loadedMB = (loadedSize / (1024 * 1024)).toFixed(2); // Loaded size in MB
+                                    const totalMB = (filesize / (1024 * 1024)).toFixed(2); // Total file size in MB
+                                    const progress = ((loadedSize / filesize) * 100).toFixed(2); // Percentage progress
+                                    l.textContent = `${loadedMB} MB / ${totalMB} MB (${progress}%)`;
+                                })
+                            );
+                        }
+                
+                        // Wait for all promises in the batch to resolve
+                        await Promise.all(batchPromises);
+                
+                        currentChunk += batchSize;
+                    }
+                
+                    // Once all chunks are loaded, combine them into a blob and update the image
+                    const blob = new Blob(chunks, { type: 'application/octet-stream' });
+                    const imgUrl = URL.createObjectURL(blob);
+                    img.src = imgUrl;
+                
+                    l.remove(); // Remove the "Connecting..." text once all chunks are loaded
+                };
+                
+                // Start the batch fetching
+                fetchChunksInBatches();
+                
+            } else {
 
+                document.getElementById("filelol").style.display = "";
+                window.streamingfile = true;
+                const audio = document.createElement("audio"); // Create an audio element instead of video
+                audio.classList.add("fileprev");
+                audio.controls = true; // Enable controls for the audio player
+                document.getElementById("filespot").innerHTML = ""; // Clear the filespot container
+                document.getElementById("filespot").appendChild(audio); // Append the audio player
+                const l = document.createElement("p");
+                l.textContent = "Loading Audio..."; // Text indicating that the audio is loading
+                document.getElementById("filespot").appendChild(l);
+                
+                const totalchunks = filelink[2];
+                const chunkid = filelink[1];
+                const filesize = filelink[3];
+                let loadedSize = 0;
+                let chunks = [];
+                
+                // Function to fetch chunks concurrently in batches
+                const fetchChunksInBatches = async () => {
+                    const batchSize = 50; // Number of concurrent requests per batch
+                    let currentChunk = 0;
+                
+                    while (currentChunk < totalchunks && window.streamingfile) {
+                        const batchPromises = [];
+                        // Create promises for the current batch of chunks
+                        for (let i = currentChunk; i < Math.min(currentChunk + batchSize, totalchunks); i++) {
+                            batchPromises.push(
+                                getasync(chunkid, i.toString(), true).then(chunk => {
+                                    // Ensure each chunk is placed at the correct index
+                                    chunks[i] = chunk;
+                                    loadedSize += chunk.size;
+                
+                                    // Update progress after each chunk is fetched
+                                    const loadedMB = (loadedSize / (1024 * 1024)).toFixed(2); // Loaded size in MB
+                                    const totalMB = (filesize / (1024 * 1024)).toFixed(2); // Total file size in MB
+                                    const progress = ((loadedSize / filesize) * 100).toFixed(2); // Percentage progress
+                                    l.textContent = `${loadedMB} MB / ${totalMB} MB (${progress}%)`;
+                                })
+                            );
+                        }
+                
+                        // Wait for all promises in the batch to resolve
+                        await Promise.all(batchPromises);
+                
+                        currentChunk += batchSize;
+                    }
+                
+                    // Once all chunks are loaded, combine them into a blob and update the audio source
+                    const blob = new Blob(chunks, { type: 'audio/mpeg' }); // Set MIME type to audio/mpeg
+                    const audioUrl = URL.createObjectURL(blob);
+                    audio.src = audioUrl; // Set the audio source to the blob URL
+                
+                    l.remove(); // Remove the "Loading Audio..." text once all chunks are loaded
+                };
+                
+                // Start the batch fetching
+                fetchChunksInBatches();
+                
+
+            }
         } else {
+
+            const codeBlock = document.createElement('pre');
+
             document.getElementById("filelol").style.display = "";
             window.streamingfile = true;
-            const img = document.createElement("video");
+            const img = document.createElement("code");
             img.classList.add("fileprev");
-            img.controls = true
             document.getElementById("filespot").innerHTML = "";
-            document.getElementById("filespot").appendChild(img);
+            codeBlock.appendChild(img)
+            document.getElementById("filespot").appendChild(codeBlock);
             const l = document.createElement("p");
-            l.textContent = "Loading Video...";
+            l.textContent = "Loading File...";
             document.getElementById("filespot").appendChild(l);
             const totalchunks = filelink[2];
             const chunkid = filelink[1];
@@ -1488,19 +1701,92 @@ async function createitems(uploadsObject, dva) {
             
                     currentChunk += batchSize;
                 }
-            
-                // Once all chunks are loaded, combine them into a blob and update the image
+
+
                 const blob = new Blob(chunks, { type: 'application/octet-stream' });
                 const imgUrl = URL.createObjectURL(blob);
-                img.src = imgUrl;
-            
-                l.remove(); // Remove the "Connecting..." text once all chunks are loaded
+
+                console.log(fileExtension)
+
+                l.remove();
+
+                const supportedLanguages = {
+                    py: "python",
+                    js: "javascript",
+                    ts: "typescript",
+                    html: "html",
+                    css: "css",
+                    java: "java",
+                    cpp: "cpp",
+                    c: "c",
+                    php: "php",
+                    ruby: "ruby",
+                    go: "go",
+                    bash: "bash",
+                    json: "json",
+                    sql: "sql",
+                    xml: "xml",
+                    markdown: "markdown",
+                    yaml: "yaml",
+                    lua: "lua",
+                    swift: "swift",
+                    kotlin: "kotlin",
+                    perl: "perl",
+                    objectivec: "objectivec",
+                    rust: "rust",
+                    vhdl: "vhdl",
+                    htmlbars: "htmlbars",
+                    dart: "dart",
+                    elixir: "elixir",
+                    elm: "elm",
+                    shell: "shell",
+                    erlang: "erlang",
+                    powershell: "powershell",
+                    hack: "hack",
+                    groovy: "groovy",
+                    scala: "scala",
+                    asm: "asm",
+                    haskell: "haskell",
+                    actionscript: "actionscript",
+                    csharp: "csharp",
+                    tex: "tex",
+                    latex: "latex",
+                    json5: "json5",
+                    scss: "scss",
+                    twig: "twig",
+                    ini: "ini"
+                };
+                
+                if (fileExtension in supportedLanguages) {
+                    const t = await fetch(imgUrl)
+                    const ti = await t.text()
+    
+                    const parser = new DOMParser();
+                    const decodedTi = parser.parseFromString(ti, 'text/html').documentElement.textContent;
+                    img.innerHTML = decodedTi;
+                    img.classList.add(supportedLanguages[fileExtension]);
+                    img.classList.add("codinglang");
+                    await createscript("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js");
+                    hljs.highlightAll();
+                
+                } else if (fileExtension == "") {
+
+                } else {
+                    const t = await fetch(imgUrl)
+                    const ti = await t.text()
+    
+                    img.innerText = ti;
+                }
+                
+
+               
             };
             
             // Start the batch fetching
             fetchChunksInBatches();
-            
         }
+
+
         
 
     });
@@ -1584,6 +1870,16 @@ async function createitems(uploadsObject, dva) {
             moddingfiles = false
 
         });
+
+        const sizedisp = document.createElement("p")
+        const size = filelink[3]
+
+        sizedisp.textContent = formatSize(size)
+        sizedisp.classList.add("sizeele")
+  
+        div.appendChild(sizedisp)
+  
+
 
       if ("Bin" != dva.split("/").pop()) {
         div.appendChild(delbutton)

@@ -5,10 +5,7 @@
 
 body {
 	margin: 0;
-	font-family: 'Roboto', sans-serif;
-	-webkit-user-select: none; /* For Chrome, Safari, and Opera */
-    -moz-user-select: none;    /* For Firefox */
-    -ms-user-select: none;     /* For Internet Explorer/Edge */
+	font-family: sans-serif, 'Noto Color Emoji';
     user-select: none;         /* Standard property */
 }
 
@@ -16,7 +13,6 @@ img, [draggable] {
     -webkit-user-drag: none;   /* For WebKit-based browsers */
     -moz-user-drag: none;      /* For Firefox */
     -ms-user-drag: none;       /* For Internet Explorer/Edge */
-    user-drag: none;           /* Standard property */
 }
 
 .main-nav {
@@ -243,6 +239,12 @@ a:active {
 	right: 60px;
 }
 
+.sizeele {
+	position: absolute;
+	right: 100px;
+}
+
+
 .inline-icon {
     display: inline-block;
     vertical-align: middle; /* To align the icon vertically with the text */
@@ -269,15 +271,14 @@ a:active {
 	border-radius: 10px;
 	padding: 20px;
 	background-color: #ffffff;
+	overflow-y: auto;
   }
 
-  .fileprev {
+  .fileprev img, video, audio {
 	position: fixed;
 	top: 50%;
 	left: 50%;
 	transform: translate(-50%, -50%);  /* This centers the element */
-	width: auto;  /* Automatically adjust to image's natural width */
-	height: auto;  /* Automatically adjust to image's natural height */
 	max-width: 80%;  /* Limit the maximum width */
 	max-height: 80%;  /* Limit the maximum height */
 	background-color: white;  /* Optional, just for visibility */
@@ -287,10 +288,67 @@ a:active {
 	justify-content: center;
 	align-items: center;
   }
+
+  .fileprev video {
+	width: auto;
+	height: auto;
+  }
   
   .fileprev img {
 	width: 100%;
 	height: 100%;
 	object-fit: contain;  /* Ensures the image scales without distortion */
   }
+
+  pre {
+	user-select: text;
+  }
   
+  code {
+	width: 100%;
+	height: 100%;
+    white-space: pre-wrap;   /* Ensures that newlines and spaces are preserved */
+    word-wrap: break-word;   /* Prevents lines from overflowing */
+}
+
+
+/* Add a background color and padding to the code block */
+.codinglang {
+    padding: 10px;
+    border-radius: 5px;
+    font-family: Consolas, monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+}
+
+/* Customize the color for different types of syntax elements */
+.hljs-keyword {
+    color: #d73a49; /* Keywords (e.g., def, class) */
+}
+
+.hljs-string {
+    color: #032f62; /* Strings */
+}
+
+.hljs-number {
+    color: #005cc5; /* Numbers */
+}
+
+.hljs-comment {
+    color: #6a737d; /* Comments */
+}
+
+.hljs-variable {
+    color: #e36209; /* Variables */
+}
+
+.hljs-function {
+    color: #6f42c1; /* Functions */
+}
+
+/* Optional: Style for <br> line breaks */
+.codinglang br {
+    display: block;
+    margin-bottom: 4px; /* Adjust the spacing between lines */
+}

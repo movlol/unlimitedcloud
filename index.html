@@ -6,23 +6,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link href="main.css" rel="stylesheet">
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="favicon.png">
   <script type="module">
     import { FFmpeg } from "./ffmpeg/index.js"
     window.FFmpeg = FFmpeg
   </script>
+
 </head>
 <body>
   <nav class="main-nav">
     <div class="logo">
       <a href="/">
-        <img src="https://cdn.glitch.global/79010910-a390-4a9c-9660-592915560bec/6295417.png" alt="Logo" width="50" height="50">
+        <img src="favicon.png" alt="Logo" width="50" height="50">
       </a>
     </div>
     <div class="cli">
       <ul class="navl"></ul>
     </div>
     <div class="profile">
-      <img src="https://cdn.glitch.global/79010910-a390-4a9c-9660-592915560bec/421-4212617_person-placeholder-image-transparent-hd-png-download.png?v=1692095398338" alt="Profile Picture">
+      <img src="person.png" alt="Profile Picture">
       <div class="dropdown">
         <div class="dropdown-item">
           <a onclick="getlogin()">Save passkey to file</a>

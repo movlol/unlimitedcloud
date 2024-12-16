@@ -7,7 +7,7 @@
   "theme_color": "#007bff",
   "icons": [
     {
-      "src": "https://cdn.glitch.global/79010910-a390-4a9c-9660-592915560bec/6295417.png",
+      "src": "favicon.png",
       "sizes": "512x512",
       "type": "image/png"
     }
