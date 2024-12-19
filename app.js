@@ -286,13 +286,16 @@ window.addEventListener("beforeunload", function(event) {
 
 function createpath() {
 
-  var segments = dValueLook.split('/');
-  var segments2 = dValue.split('/');
-
-  var linksHTML = segments.map(function(segment, index) {
-      var path = segments.slice(0, index + 1).join('/');
-      return '<a class="breadcrumb-link">' + decodeURIComponent(segment) + '</a>';
-  });
+    var segments = dValueLook.split('/');
+    var segments2 = dValue.split('/');
+    
+    var linksHTML = segments.map(function(segment, index) {
+        // Add the corresponding value from segments2 as a custom attribute
+        return `<a class="breadcrumb-link" data-value="${encodeURIComponent(segments2[index])}">
+                    ${decodeURIComponent(segment)}
+                </a>`;
+    });
+    
 
   var dirDiv = document.getElementById('dir');
   dirDiv.innerHTML = linksHTML.join(' / ');
@@ -309,6 +312,24 @@ function createpath() {
           loaduploads();
           createpath();
       });
+
+
+    link.addEventListener("dragenter", async function(event) {
+        event.preventDefault();
+        link.classList.add("dragingonbread")
+        window.dragtofolder = link.getAttribute("data-value")
+        console.log(window.dragtofolder)
+        window.dragtofolname = link.textContent.trim()
+      })
+
+      link.addEventListener("dragleave", async function(event) {
+        const s = window.dragtofolder
+        link.classList.remove("dragingonbread")
+        await delay(1000)
+        if (s == window.dragtofolder) {
+            window.dragtofolder = null
+        }
+      })
   });
 
 }
@@ -1154,7 +1175,7 @@ async function createitems(uploadsObject, dva) {
   }
   console.log(uploadsObject)
 
-  const uploadsContainer = document.getElementById("uploads-container");
+  const uploadsContainer = document.getElementById("fileslist");
 
   const existingLinks = uploadsContainer.querySelectorAll(".itemlol");
   existingLinks.forEach(link => {
@@ -1183,7 +1204,7 @@ async function createitems(uploadsObject, dva) {
         dValueLook = "root/Bin"
         loaduploads()
     });
-  
+    
     const div = document.createElement("div");
     div.className = "list-item folder"; // Apply a CSS class for styling
     div.style.backgroundColor = "#5AB0FA"; // Set the background color
@@ -1194,6 +1215,24 @@ async function createitems(uploadsObject, dva) {
     div.appendChild(span);
     link.appendChild(div);
     uploadsContainer.appendChild(link);
+
+
+    div.addEventListener("dragenter", async function(event) {
+        event.preventDefault();
+        div.classList.add("dragingon")
+        window.dragtofolder = "Bin"
+        window.dragtofolname = "Bin"
+      })
+
+    div.addEventListener("dragleave", async function(event) {
+        const s = window.dragtofolder
+        div.classList.remove("dragingon")
+        await delay(500)
+        if (s == window.dragtofolder) {
+            window.dragtofolder = null
+        }
+    })
+
   }
 
 
@@ -1219,6 +1258,8 @@ async function createitems(uploadsObject, dva) {
       const div = document.createElement("div");
       div.className = "list-item folder"; // Apply a CSS class for styling
       div.style.backgroundColor = "#5AB0FA"; // Set the background color
+      div.draggable = true
+
 
       const span = document.createElement("span");
       span.textContent = "📁" + filename;
@@ -1260,7 +1301,12 @@ async function createitems(uploadsObject, dva) {
                 Binobjects = JSON.parse(Binobjects)
               }
 
-              Binobjects[generateUUID() + filename] = uploadsObject[filename]
+              let prefix = "" //javascript good
+              while (Binobjects[prefix + filename]) {
+                prefix += 1
+              }
+
+              Binobjects[prefix+filename] = uploadsObject[filename]
               delete uploadsObject[filename]
               await setasync("u", "Bin", JSON.stringify(Binobjects))
               await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
@@ -1411,13 +1457,134 @@ async function createitems(uploadsObject, dva) {
       link.appendChild(div);
       uploadsContainer.appendChild(link);
 
+      let draggingthisfolder = false
+
+
+      
+      div.addEventListener("dragenter", async function(event) {
+        if (draggingthisfolder) {
+            return
+        }
+        event.preventDefault();
+        div.classList.add("dragingon")
+        window.dragtofolder = filelink[0]
+        window.dragtofolname = filename
+      })
+
+      div.addEventListener("dragleave", async function(event) {
+        if (draggingthisfolder) {
+            return
+        }
+        const s = window.dragtofolder
+        div.classList.remove("dragingon")
+        await delay(500)
+        if (s == window.dragtofolder) {
+            window.dragtofolder = null
+        }
+      })
+
+
+
+      div.addEventListener("dragstart", function(event) {
+        draggingthisfolder = true
+        window.dragtofolder = null;
+        console.log(filelink);
+    
+        // Scroll to the top of the page without affecting the drag
+        setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 0); // Defer the scroll to avoid conflicts with the dragstart event
+    });
+    
+
+      div.addEventListener("dragend", async function(event) {
+        draggingthisfolder = false
+        
+        if (moddingfiles) {
+            return alert("Another process is running. please wait");
+        }
+    
+        console.log("stopped!")
+        console.log(window.dragtofolder)
+        const FoldertoMovto = window.dragtofolder
+        console.log(FoldertoMovto)
+        if (!FoldertoMovto) {
+            return alert("You must drag the file onto a folder to move it")
+        }
+
+        if (!confirm(`Would you like to move ${filename} into ${window.dragtofolname}`)) {
+            return
+        }
+
+        if (FoldertoMovto == "Bin") {
+            if (confirm(`Would you like to move folder ${filename} to the bin`)) {
+                moddingfiles = true
+                  let uploadsObject = await getasync("u", dValue.split("/").pop())
+                  if (!uploadsObject) {
+                      uploadsObject = {}
+                  } else {
+                      uploadsObject = JSON.parse(uploadsObject)
+                  }
+    
+                  let Binobjects = await getasync("u", "Bin")
+                  if (!Binobjects) {
+                    Binobjects = {}
+                  } else {
+                    Binobjects = JSON.parse(Binobjects)
+                  }
+    
+                  let prefix = "" //javascript good
+                  while (Binobjects[prefix + filename]) {
+                    prefix += 1
+                  }
+    
+                  Binobjects[prefix+filename] = uploadsObject[filename]
+                  delete uploadsObject[filename]
+                  await setasync("u", "Bin", JSON.stringify(Binobjects))
+                  await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
+                  moddingfiles = false
+                  loaduploads()
+            }
+
+            return
+        }
+
+        moddingfiles = true
+
+        const currentfolder = dva.split("/").pop()
+
+        let uploadsObject = await getasync("u", currentfolder)
+        if (!uploadsObject) {
+            uploadsObject = {}
+        } else {
+            uploadsObject = JSON.parse(uploadsObject)
+        }
+
+        let uploadsObject2 = await getasync("u", FoldertoMovto)
+        if (!uploadsObject2) {
+            uploadsObject2 = {}
+        } else {
+            uploadsObject2 = JSON.parse(uploadsObject2)
+        }
+
+        let prefix = "" //javascript good
+        while (uploadsObject2[prefix + filename]) {
+          prefix += 1
+        }
+
+        uploadsObject2[prefix + filename] = filelink
+        await setasync("u", FoldertoMovto, JSON.stringify(uploadsObject2))
+        if (uploadsObject[filename]) {
+            delete uploadsObject[filename]
+        }
+        await setasync("u", currentfolder, JSON.stringify(uploadsObject))
+
+        moddingfiles = false
+        loaduploads()
+      })
 
 
   });
-
-
-
-
 
 
   // Create and append file entries
@@ -1429,6 +1596,110 @@ async function createitems(uploadsObject, dva) {
       var fileExtension = getFileExtension(filename);
       const div = document.createElement("div");
       div.className = "list-item";
+      div.draggable = true
+
+      div.addEventListener("dragstart", function(event) {
+        window.dragtofolder = null;
+        console.log(filelink);
+    
+        // Scroll to the top of the page without affecting the drag
+        setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 0); // Defer the scroll to avoid conflicts with the dragstart event
+    });
+    
+
+      div.addEventListener("dragend", async function(event) {
+
+        if (moddingfiles) {
+            return alert("Another process is running. please wait");
+        }
+    
+        console.log("stopped!")
+        console.log(window.dragtofolder)
+        const FoldertoMovto = window.dragtofolder
+        console.log(FoldertoMovto)
+        if (!FoldertoMovto) {
+            return alert("You must drag the file onto a folder to move it")
+        }
+
+        if (!confirm(`Would you like to move ${filename} into ${window.dragtofolname}`)) {
+            return
+        }
+
+        if (FoldertoMovto == "Bin") {
+            if (confirm(`Would you like to move ${filename} to the bin`)) {
+                moddingfiles = true
+                  let uploadsObject = await getasync("u", dValue.split("/").pop())
+                  if (!uploadsObject) {
+                      uploadsObject = {}
+                  } else {
+                      uploadsObject = JSON.parse(uploadsObject)
+                  }
+    
+                  let Binobjects = await getasync("u", "Bin")
+                  if (!Binobjects) {
+                    Binobjects = {}
+                  } else {
+                    Binobjects = JSON.parse(Binobjects)
+                  }
+    
+                  let prefix = "" //javascript good
+                  while (Binobjects[prefix + filename]) {
+                    prefix += 1
+                  }
+    
+                  Binobjects[prefix+filename] = uploadsObject[filename]
+                  delete uploadsObject[filename]
+                  await setasync("u", "Bin", JSON.stringify(Binobjects))
+                  await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))
+                  moddingfiles = false
+                  loaduploads()
+            }
+
+            return
+        }
+       
+
+
+
+
+        moddingfiles = true
+
+        const currentfolder = dva.split("/").pop()
+
+        let uploadsObject = await getasync("u", currentfolder)
+        if (!uploadsObject) {
+            uploadsObject = {}
+        } else {
+            uploadsObject = JSON.parse(uploadsObject)
+        }
+
+        let uploadsObject2 = await getasync("u", FoldertoMovto)
+        if (!uploadsObject2) {
+            uploadsObject2 = {}
+        } else {
+            uploadsObject2 = JSON.parse(uploadsObject2)
+        }
+
+        let prefix = "" //javascript good
+        while (uploadsObject2[prefix + filename]) {
+          prefix += 1
+        }
+
+
+        uploadsObject2[prefix + filename] = filelink
+        await setasync("u", FoldertoMovto, JSON.stringify(uploadsObject2))
+        if (uploadsObject[filename]) {
+            delete uploadsObject[filename]
+        }
+        await setasync("u", currentfolder, JSON.stringify(uploadsObject))
+
+        moddingfiles = false
+        loaduploads()
+      })
+
+
       let e = emoji[fileExtension]
       if (!e) {
           e = "❓"
@@ -1819,9 +2090,12 @@ async function createitems(uploadsObject, dva) {
               } else {
                 Binobjects = JSON.parse(Binobjects)
               }
-              
+              let prefix = "" //javascript good
+              while (Binobjects[prefix + filename]) {
+                prefix += 1
+              }
 
-              Binobjects[generateUUID() + filename] = uploadsObject[filename]
+              Binobjects[prefix+filename] = uploadsObject[filename]
               delete uploadsObject[filename]
               await setasync("u", "Bin", JSON.stringify(Binobjects))
               await setasync("u", dValue.split("/").pop(), JSON.stringify(uploadsObject))

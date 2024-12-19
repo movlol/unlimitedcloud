@@ -9,7 +9,7 @@ body {
     user-select: none;         /* Standard property */
 }
 
-img, [draggable] {
+img {
     -webkit-user-drag: none;   /* For WebKit-based browsers */
     -moz-user-drag: none;      /* For Firefox */
     -ms-user-drag: none;       /* For Internet Explorer/Edge */
@@ -198,6 +198,15 @@ a:hover {
 	flex: 1;
 }
 
+.dragingon {
+	background-color: #aed9ff !important;
+}
+
+.dragingonbread {
+	color: #007bff !important;
+}
+
+
 
 /* Apply basic styling */
 a {
@@ -274,6 +283,7 @@ a:active {
 	overflow-y: auto;
   }
 
+  
   .fileprev img, video, audio {
 	position: fixed;
 	top: 50%;
