@@ -13,30 +13,48 @@
   </script>
 
 </head>
-<body>
+<body class="light-theme">
   <nav class="main-nav">
     <div class="logo">
-      <a href="/">
+      <a onclick="refreshpage()">
         <img src="favicon.png" alt="Logo" width="50" height="50">
       </a>
     </div>
     <div class="cli">
       <ul class="navl"></ul>
     </div>
-    <div class="profile">
-      <img src="person.png" alt="Profile Picture">
-      <div class="dropdown">
-        <div class="dropdown-item">
-          <a onclick="getlogin()">Save passkey to file</a>
-        </div>
-        <br>
-        <div class="dropdown-item">
-          <a onclick="logout()">Log out</a>
-          <script></script>
-        </div>
-      </div>
+    <div class="profile" id="settingsclick" onclick="opensettings()">
+      <img src="cog.png" alt="Profile Picture" class="settingicon">
     </div>
   </nav>
+  <div id="settings" style="display: none;">
+    <p>Dark Theme</p>
+    <label class="switch">
+      <input type="checkbox" id="theme-switcher" onchange="changeTheme()" />
+      <span class="slider"></span>
+    </label>
+    <p>Show Bin</p>
+    <label class="switch">
+      <input type="checkbox" id="bin-switcher" onchange="changeBinVis()" />
+      <span class="slider"></span>
+    </label>
+    <p>Cache Controls</p>
+    <button onclick="cleardirs()">Clear Directory Cache</button>
+    <p>Change Profile</p>
+    <select id="profile-selector" onchange="changeProfile()">
+      <option value="">Profile 1</option>
+      <option value="2">Profile 2</option>
+      <option value="3">Profile 3</option>
+      <option value="4">Profile 4</option>
+      <option value="5">Hidden</option>
+    </select>
+
+
+    <p>Account Controls</p>
+    <button onclick="getlogin()">Save passkey to file</button>
+    <button onclick="logout()">Log out</button>
+  </div>
+
   <div id="auth" style="display: none;">
     <center>
       <h1>Login with passkey</h1>

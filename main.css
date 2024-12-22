@@ -9,6 +9,11 @@ body {
     user-select: none;         /* Standard property */
 }
 
+body.dark-theme {
+	background-color: #121212;
+	color: #ffffff;
+}
+
 img {
     -webkit-user-drag: none;   /* For WebKit-based browsers */
     -moz-user-drag: none;      /* For Firefox */
@@ -20,6 +25,10 @@ img {
 	padding: 20px;
 	display: flex;
 	align-items: center;
+}
+
+body.dark-theme .main-nav  {
+	background-color: #000000 !important;
 }
 
 .main-nav .logo {
@@ -65,29 +74,6 @@ img {
 	cursor: pointer;
 }
 
-.dropdown {
-	position: absolute;
-	top: 55px;
-	right: 30px;
-	background-color: #fff;
-	border: 1px solid #ccc;
-	border-radius: 5px;
-	padding: 10px;
-	display: none;
-}
-
-.profile:hover .dropdown {
-	display: block;
-}
-
-.dropdown-item {
-	padding: 5px;
-	cursor: pointer;
-}
-
-.dropdown-item:hover {
-	background-color: #f1f1f1;
-}
 
 .form-container {
 	padding: 20px;
@@ -139,13 +125,21 @@ a {
 	text-decoration: none;
 }
 
+body.dark-theme button  {
+	background-color: rgb(65, 65, 65) !important;
+	color: #ffffff;
+}
+
+body.dark-theme button:hover  {
+	background-color: rgb(34, 34, 34) !important;
+}
+
 a:hover {
 	text-decoration: underline;
 }
 
 .upload-button {
 	padding: 10px 20px;
-	color: #000000;
 	border: none;
 	border-radius: 4px;
 	font-size: 17px;
@@ -186,6 +180,20 @@ a:hover {
 	/* Add some spacing between the icon and text */
 }
 
+body.dark-theme .list-item  {
+	background-color: rgb(0, 0, 0);
+	color: #f9f9f9;
+	border: 1px solid #242424;
+}
+
+.folder {
+	background-color: #5AB0FA;
+}
+
+body.dark-theme .folder {
+	background-color: #272727;
+}
+
 .list-item span {
 	white-space: nowrap;
 	overflow: hidden;
@@ -200,6 +208,10 @@ a:hover {
 
 .dragingon {
 	background-color: #aed9ff !important;
+}
+
+body.dark-theme .dragingon {
+	background-color: #6d6d6d !important;
 }
 
 .dragingonbread {
@@ -225,6 +237,14 @@ a:hover {
 	/* Change color on hover */
 	text-decoration: none;
 	cursor: pointer;
+}
+
+body.dark-theme a {
+	color: #adadad;
+}
+
+body.dark-theme a:hover {
+	color: #f9f9f9;
 }
 
 /* Style links for visited pages */
@@ -283,7 +303,10 @@ a:active {
 	overflow-y: auto;
   }
 
-  
+  body.dark-theme .popup-content {
+	background-color: #181818;
+}
+
   .fileprev img, video, audio {
 	position: fixed;
 	top: 50%;
@@ -298,6 +321,11 @@ a:active {
 	justify-content: center;
 	align-items: center;
   }
+
+  body.dark-theme .fileprev img, video, audio {
+	background-color: #181818;
+	}
+
 
   .fileprev video {
 	width: auto;
@@ -362,3 +390,130 @@ a:active {
     display: block;
     margin-bottom: 4px; /* Adjust the spacing between lines */
 }
+
+#settings {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-top: 20px; /* Adds space from the top */
+  }
+  #settings button {
+	margin: 10px 0;
+	padding: 10px 20px;
+	font-size: 16px;
+	cursor: pointer;
+  }
+
+  #settings button, #settings select {
+	margin: 10px 0;
+	padding: 10px 20px;
+	font-size: 16px;
+	cursor: pointer;
+  }
+
+  .settingicon {
+	filter: brightness(0) invert(0); /* Ensures the image becomes fully white */
+  }
+  
+  body.dark-theme .settingicon {
+	filter: brightness(0) invert(1); /* Ensures the image becomes fully white */
+  }
+
+        /* The switch container */
+		.switch {
+			position: relative;
+			display: inline-block;
+			width: 60px;
+			height: 34px;
+		  }
+		
+		  /* Hide the default checkbox */
+		  .switch input {
+			opacity: 0;
+			width: 0;
+			height: 0;
+		  }
+		
+		  /* The slider */
+		  .slider {
+			position: absolute;
+			cursor: pointer;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: #ccc;
+			transition: 0.4s;
+			border-radius: 34px;
+		  }
+		
+		  /* Slider when toggled */
+		  .slider:before {
+			position: absolute;
+			content: "";
+			height: 26px;
+			width: 26px;
+			left: 4px;
+			bottom: 4px;
+			background-color: white;
+			transition: 0.4s;
+			border-radius: 50%;
+		  }
+		
+		  input:checked + .slider {
+			background-color: #2196f3;
+		  }
+		
+		  input:checked + .slider:before {
+			transform: translateX(26px);
+		  }
+
+
+/* General styles for the container */
+.profile-container {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	color: #f0f0f0;
+	font-family: Arial, sans-serif;
+  }
+  
+  /* Label styling */
+  .profile-container label {
+	font-size: 14px;
+	font-weight: bold;
+	color: #e0e0e0;
+  }
+  
+  /* Modern and Dark Themed Select */
+  #profile-selector {
+	appearance: none;
+	background-color: rgb(65, 65, 65) ;
+	color: #f0f0f0;
+	padding: 10px 12px;
+	font-size: 16px;
+	border: 1px solid #3a3a3c;
+	border-radius: 8px;
+	outline: none;
+	transition: border-color 0.3s ease, box-shadow 0.3s ease;
+	cursor: pointer;
+  }
+  
+  /* Hover and Focus Effects */
+  #profile-selector:hover {
+	border-color: #0078ff;
+  }
+  
+  #profile-selector:focus {
+	border-color: #0078ff;
+	box-shadow: 0 0 5px #0078ff;
+  }
+  
+  /* Dropdown Arrow Styling (for better modern look) */
+  #profile-selector {
+	background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 6"%3E%3Cpath fill="%23f0f0f0" d="M0 0l5 6 5-6z"/%3E');
+	background-repeat: no-repeat;
+	background-position: right 12px center;
+	background-size: 10px 6px;
+  }
+  
