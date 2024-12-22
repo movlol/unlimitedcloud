@@ -1857,7 +1857,7 @@ async function createitems(uploadsObject, dva) {
                 document.getElementById("filelol").style.display = "";
                 window.streamingfile = true;
                 const img = document.createElement("img");
-                img.classList.add("fileprev");
+                img.classList.add("fileprevmedia");
                 document.getElementById("filespot").innerHTML = "";
                 document.getElementById("filespot").appendChild(img);
                 const l = document.createElement("p");
@@ -1915,7 +1915,7 @@ async function createitems(uploadsObject, dva) {
                 document.getElementById("filelol").style.display = "";
                 window.streamingfile = true;
                 const img = document.createElement("video");
-                img.classList.add("fileprev");
+                img.classList.add("fileprevmedia");
                 img.controls = true
                 document.getElementById("filespot").innerHTML = "";
                 document.getElementById("filespot").appendChild(img);
@@ -1974,7 +1974,7 @@ async function createitems(uploadsObject, dva) {
                 document.getElementById("filelol").style.display = "";
                 window.streamingfile = true;
                 const audio = document.createElement("audio"); // Create an audio element instead of video
-                audio.classList.add("fileprev");
+                audio.classList.add("fileprevmedia");
                 audio.controls = true; // Enable controls for the audio player
                 document.getElementById("filespot").innerHTML = ""; // Clear the filespot container
                 document.getElementById("filespot").appendChild(audio); // Append the audio player
@@ -2038,7 +2038,6 @@ async function createitems(uploadsObject, dva) {
             document.getElementById("filelol").style.display = "";
             window.streamingfile = true;
             const img = document.createElement("code");
-            img.classList.add("fileprev");
             document.getElementById("filespot").innerHTML = "";
             codeBlock.appendChild(img)
             document.getElementById("filespot").appendChild(codeBlock);
