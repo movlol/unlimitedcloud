@@ -718,96 +718,145 @@ async function uploadthumbnail(file, chunksstorageid,) {
   }
 
 
-async function trymakethumbnail(file) {
-    let thumbnailchunkid = ""
-    
+  async function trymakethumbnail(file) {
+    let thumbnailchunkid = "";
+
+
     try {
         const ext = getFileExtension(file.name);
-        const works = isSupportedByFFmpeg(ext)
-        console.log(works)
+        const works = isSupportedByFFmpeg(ext); // Check file type (image, video, etc.)
+        console.log(works);
 
-        if (works == "audio") {
-            return thumbnailchunkid
-        }
-        
-        if (works) {
-
-            const FFmpeg = window.FFmpeg
-            ffmpeg = new FFmpeg()
-            console.log(ffmpeg)
-            ffmpeg.on("log", ({message}) => console.log(message))
-            const coreURL = "/ffmpeg-core.js"
-            await ffmpeg.load({coreURL})
-            console.log("FFmpeg has loaded!")
-    
-          filebuff = await new Promise ((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = function(event) {
-                      resolve(event.target.result)
-              };
-              reader.readAsArrayBuffer(file);
-          })
-          const inputname = "input." + ext
-          await ffmpeg.writeFile(inputname, new Uint8Array(filebuff))
-    
-          thumbnailchunkid = generateUUID()
-    
-    
-    
-          try {
-              if (works == "image") {
-                  await ffmpeg.exec([
-                      '-i', inputname,            // Input file
-                      '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Crop filter
-                      '-s', '128x128',            // Resize to 128x128
-                      "thumbnail.png"                  // Output file
-                  ]);
-                  const newdata = await ffmpeg.readFile("thumbnail.png")
-                  const blob = new Blob([newdata], { type: 'image/png' });
-                  const file = new File([blob], "thumbnail.png", { type: 'image/png' });
-                  console.log(file)
-                  whatisthumb = blob
-      
-                  await uploadthumbnail(file, thumbnailchunkid)
-      
-              } else if (works == "video") {
-                  await ffmpeg.exec([
-                      '-i', inputname,                           // Input video
-                      '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Scale and pad to 128x128
-                      '-frames:v', '1',                          // Extract only one frame
-                      '-ss', '00:00:01',                         // Take the frame at 1 second into the video
-                      "thumbnail.png"                            // Output file
-                  ]);
-                  const newdata = await ffmpeg.readFile("thumbnail.png");
-                  const blob = new Blob([newdata], { type: 'image/png' });
-                  const file = new File([blob], "thumbnail.png", { type: 'image/png' });
-                  console.log(file)
-                  whatisthumb = blob
-    
-                  await uploadthumbnail(file, thumbnailchunkid);
-      
-              }
-
-              await setCachedBlob(thumbnailchunkid, whatisthumb)
-      
-          } catch(err) {
-              console.log(err)
-              thumbnailchunkid = ""
-          }
-    
-    
-        }
-    
-        if (ffmpeg) {
-            ffmpeg.terminate()
+        if (works === "audio") {
+            return thumbnailchunkid; // No thumbnail for audio
         }
 
-    } catch(err) {
-        console.log(err)
+        thumbnailchunkid = generateUUID();
+
+        if (works === "image") {
+            const img = new Image();
+            const objectURL = URL.createObjectURL(file);
+
+            img.src = objectURL;
+            await new Promise((resolve) => (img.onload = resolve));
+
+            // Create a canvas and draw the image
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            canvas.width = 128;
+            canvas.height = 128;
+
+            const aspectRatio = img.width / img.height;
+
+            if (aspectRatio > 1) {
+                // Landscape
+                ctx.drawImage(
+                    img,
+                    (img.width - img.height) / 2,
+                    0,
+                    img.height,
+                    img.height,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+            } else {
+                // Portrait
+                ctx.drawImage(
+                    img,
+                    0,
+                    (img.height - img.width) / 2,
+                    img.width,
+                    img.width,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+            }
+
+            // Convert canvas to blob
+            const blob = await new Promise((resolve) =>
+                canvas.toBlob(resolve, "image/png")
+            );
+            const thumbnailFile = new File([blob], "thumbnail.png", {
+                type: "image/png",
+            });
+
+            console.log(thumbnailFile);
+            await uploadthumbnail(thumbnailFile, thumbnailchunkid);
+            await setCachedBlob(thumbnailchunkid, blob);
+
+            URL.revokeObjectURL(objectURL); // Clean up
+        } else if (works === "video") {
+            const video = document.createElement("video");
+            const objectURL = URL.createObjectURL(file);
+
+            video.src = objectURL;
+            video.currentTime = 1; // Seek to 1 second for the thumbnail
+            await new Promise((resolve) => (video.onloadeddata = resolve));
+
+            // Create a canvas and draw the video frame
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+
+            canvas.width = 128;
+            canvas.height = 128;
+
+            const aspectRatio = video.videoWidth / video.videoHeight;
+
+            if (aspectRatio > 1) {
+                // Landscape
+                ctx.drawImage(
+                    video,
+                    (video.videoWidth - video.videoHeight) / 2,
+                    0,
+                    video.videoHeight,
+                    video.videoHeight,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+            } else {
+                // Portrait
+                ctx.drawImage(
+                    video,
+                    0,
+                    (video.videoHeight - video.videoWidth) / 2,
+                    video.videoWidth,
+                    video.videoWidth,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+            }
+
+            // Convert canvas to blob
+            const blob = await new Promise((resolve) =>
+                canvas.toBlob(resolve, "image/png")
+            );
+            const thumbnailFile = new File([blob], "thumbnail.png", {
+                type: "image/png",
+            });
+
+            console.log(thumbnailFile);
+            await uploadthumbnail(thumbnailFile, thumbnailchunkid);
+            await setCachedBlob(thumbnailchunkid, blob);
+
+            URL.revokeObjectURL(objectURL); // Clean up
+        }
+    } catch (err) {
+        console.log(err);
+        thumbnailchunkid = "";
     }
 
-    return thumbnailchunkid
+    return thumbnailchunkid;
 }
+
 
 async function handleFileSelection(event) {
   const allfiles = event.target.files.length;
@@ -845,30 +894,27 @@ moddingfiles = true
     upt2.innerHTML = `0 MB / ${(combinedsize / (1024 * 1024)).toFixed(2)} MB<br>${formatTime(combinedsize / bytesPerSecond)}`;
     document.title = `0%`;
 
-
-    let uploadsObject = await getasync("u", dvvv.split("/").pop())
-    if (!uploadsObject) {
-        uploadsObject = {}
-    } else {
-        uploadsObject = JSON.parse(uploadsObject)
-    }
-    for (const file of (event.target.files)) {
-        let n = file.name
-        if (uploadsObject[n]) {
-            moddingfiles = false
-            return alert(`There is already a file with the same name ${n}`)
-        }
-    
-    }
-
   let i = 0
   let uploaded = 0
   for (const file of (event.target.files)) {
       i += 1
+
+      let uploadsObject = await getasync("u", dvvv.split("/").pop())
+      if (!uploadsObject) {
+          uploadsObject = {}
+      } else {
+          uploadsObject = JSON.parse(uploadsObject)
+      }
+      let n = file.name
+      if (uploadsObject[n]) {
+          console.log("resuming...")
+          uploaded += file.size
+          continue
+      }
+
       const thumbnailchunkid = await trymakethumbnail(file)
       await setfile(file, i, allfiles, dvvv, thumbnailchunkid, combinedsize, uploaded, filenameV);
       uploaded += file.size
-
   };
 
   uploadProgressText.textContent = ``;
@@ -2163,9 +2209,6 @@ async function createitems(uploadsObject, dva) {
             // Start the batch fetching
             fetchChunksInBatches();
         }
-
-
-        
 
     });
 
