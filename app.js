@@ -717,9 +717,104 @@ async function uploadthumbnail(file, chunksstorageid,) {
     });
   }
 
+  async function makethumbnailSMALLFILE(file) {
+    let thumbnailchunkid = ""
+    
+    try {
+        const ext = getFileExtension(file.name);
+        const works = isSupportedByFFmpeg(ext)
+        console.log(works)
+
+        if (works == "audio") {
+            return thumbnailchunkid
+        }
+        
+        if (works) {
+
+            const FFmpeg = window.FFmpeg
+            ffmpeg = new FFmpeg()
+            console.log(ffmpeg)
+            ffmpeg.on("log", ({message}) => console.log(message))
+            const coreURL = "/ffmpeg-core.js"
+            await ffmpeg.load({coreURL})
+            console.log("FFmpeg has loaded!")
+    
+          filebuff = await new Promise ((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = function(event) {
+                      resolve(event.target.result)
+              };
+              reader.readAsArrayBuffer(file);
+          })
+          const inputname = "input." + ext
+          await ffmpeg.writeFile(inputname, new Uint8Array(filebuff))
+    
+          thumbnailchunkid = generateUUID()
+    
+    
+    
+          try {
+              if (works == "image") {
+                  await ffmpeg.exec([
+                      '-i', inputname,            // Input file
+                      '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Crop filter
+                      '-s', '128x128',            // Resize to 128x128
+                      "thumbnail.png"                  // Output file
+                  ]);
+                  const newdata = await ffmpeg.readFile("thumbnail.png")
+                  const blob = new Blob([newdata], { type: 'image/png' });
+                  const file = new File([blob], "thumbnail.png", { type: 'image/png' });
+                  console.log(file)
+                  whatisthumb = blob
+      
+                  await uploadthumbnail(file, thumbnailchunkid)
+      
+              } else if (works == "video") {
+                  await ffmpeg.exec([
+                      '-i', inputname,                           // Input video
+                      '-vf', 'scale=128:128:force_original_aspect_ratio=decrease,pad=128:128:(ow-iw)/2:(oh-ih)/2', // Scale and pad to 128x128
+                      '-frames:v', '1',                          // Extract only one frame
+                      '-ss', '00:00:01',                         // Take the frame at 1 second into the video
+                      "thumbnail.png"                            // Output file
+                  ]);
+                  const newdata = await ffmpeg.readFile("thumbnail.png");
+                  const blob = new Blob([newdata], { type: 'image/png' });
+                  const file = new File([blob], "thumbnail.png", { type: 'image/png' });
+                  console.log(file)
+                  whatisthumb = blob
+    
+                  await uploadthumbnail(file, thumbnailchunkid);
+      
+              }
+
+              await setCachedBlob(thumbnailchunkid, whatisthumb)
+      
+          } catch(err) {
+              console.log(err)
+              thumbnailchunkid = ""
+          }
+    
+    
+        }
+    
+        if (ffmpeg) {
+            ffmpeg.terminate()
+        }
+
+    } catch(err) {
+        console.log(err)
+    }
+
+    return thumbnailchunkid
+}
+
 
   async function trymakethumbnail(file) {
     let thumbnailchunkid = "";
+
+    if (file.size < 1024 * 1024 * 1024) {
+        return await makethumbnailSMALLFILE(file)
+    }
 
 
     try {
