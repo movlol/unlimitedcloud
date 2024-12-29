@@ -738,8 +738,11 @@ async function uploadthumbnail(file, chunksstorageid,) {
             const objectURL = URL.createObjectURL(file);
 
             img.src = objectURL;
-            await new Promise((resolve) => (img.onload = resolve));
-
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = () => reject(new Error("Invalid image file"));
+            });
+            
             // Create a canvas and draw the image
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d");
@@ -796,7 +799,10 @@ async function uploadthumbnail(file, chunksstorageid,) {
 
             video.src = objectURL;
             video.currentTime = 1; // Seek to 1 second for the thumbnail
-            await new Promise((resolve) => (video.onloadeddata = resolve));
+            await new Promise((resolve, reject) => {
+                video.onloadeddata = resolve;
+                video.onerror = () => reject(new Error("Invalid video file"));
+            });
 
             // Create a canvas and draw the video frame
             const canvas = document.createElement("canvas");
